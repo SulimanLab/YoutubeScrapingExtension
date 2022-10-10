@@ -1,0 +1,68 @@
+/*@use "@material/floating-label/mdc-floating-label";*/
+/*@use "@material/line-ripple/mdc-line-ripple";*/
+/*@use "@material/notched-outline/mdc-notched-outline";*/
+/*@use "@material/textfield";*/
+
+/*@include textfield.core-styles;*/
+
+button {
+    background-color: #6a7945;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+}
+
+#button2 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+button.current {
+    box-shadow: 0 0 0 2px white,
+    0 0 0 4px black;
+}
+
+input {
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    width: 100%;
+    box-sizing: border-box;
+    outline: 0;
+    color: #fff;
+    padding: 5px 0 5px 34px;
+    background: hsl(77deg 27% 37% / 12%);
+    transition: width .2s ease-in, background .15s cubic-bezier(.4, 0, .2, 1);
+}
+
+input, select, textarea {
+    color: #ff0000;
+}
+
+body, .page_root {
+    height: 600px;
+    width: 480px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol;
+
+}
+
+#search {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    /* border: 0px solid red; */
+    border-radius: 4px;
+}
+
+#titletext {
+    margin: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px ridge;
+}
