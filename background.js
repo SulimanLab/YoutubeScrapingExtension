@@ -2,6 +2,16 @@
 // decrease thread race condition occurrence
 const seen = [];
 
+chrome.alarms.onAlarm.addListener(function (objAlarm) {
+    if (objAlarm.name === 'synchronize') {
+        Youtube.synchronize({
+            'intThreshold': 512
+        }, function (objResponse) {
+            console.log('synchronized youtube');
+        });
+    }
+});
+
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function (tab) {
         // regex check if url is youtube
