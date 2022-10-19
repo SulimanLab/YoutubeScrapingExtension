@@ -1,5 +1,5 @@
 chrome.alarms.create('synchronize',
-    {periodInMinutes: 11111}
+    {periodInMinutes: 1111}
 );
 
 
@@ -78,7 +78,7 @@ chrome.runtime.sendMessage({greeting: "hello"}, function (response) {
 chrome.alarms.onAlarm.addListener(function (objAlarm) {
     if (objAlarm.name === 'synchronize') {
         Youtube.synchronize({
-            'intThreshold': 512
+            'intThreshold': 5120
         }, function (objResponse) {
             console.log('synchronized youtube');
         });
@@ -154,6 +154,7 @@ var Youtube = {
 
                         if (objArguments.objYtctx === null) {
                             objArguments.objYtctx = funcHackyparse(objAjax.responseText.split('"INNERTUBE_CONTEXT":')[1]);
+                            console.log("objArguments.objYtctx = ", objArguments.objYtctx)
                         }
 
                         var strRegex = null;
@@ -163,7 +164,7 @@ var Youtube = {
 
                         var strUnescaped = objAjax.responseText.split('\\"').join('\\u0022').split('\r').join('').split('\n').join('');
 
-                        console.log(strUnescaped)
+                        // console.log(strUnescaped)
                         if ((strRegex = objContinuation.exec(strUnescaped)) !== null) {
                             objArguments.strContinuation = strRegex[6];
                         }
@@ -176,39 +177,49 @@ var Youtube = {
 
 
                         while ((strRegex = objVideo.exec(strUnescaped)) !== null) {
-                            var strIdent = strRegex[6];
+                            // var strIdent = strRegex[6];
                             var strTitle = strRegex[12];
 
-                            strTitle = strTitle.split('\\u0022').join('"');
-                            strTitle = strTitle.split('\\u0026').join('&');
-                            strTitle = strTitle.split('\\u003C').join('<');
-                            strTitle = strTitle.split('\\u003C').join('=');
-                            strTitle = strTitle.split('\\u003E').join('>');
-                            strTitle = strTitle.split('\\u003E').join('>');
-                            // alert(strTitle)
-                            objVideos.push({
-                                'strIdent': strIdent,
-                                'intTimestamp': null,
-                                'strTitle': strTitle,
-                                'intCount': null
-                            });
-                            if (objVideos.length >= 100) {
-                                break;
-                            }
+                            console.log(strTitle)
+                            // break;
+
+                            // var strTitle = strRegex[12];
+                            //
+                            // strTitle = strTitle.split('\\u0022').join('"');
+                            // strTitle = strTitle.split('\\u0026').join('&');
+                            // strTitle = strTitle.split('\\u003C').join('<');
+                            // strTitle = strTitle.split('\\u003C').join('=');
+                            // strTitle = strTitle.split('\\u003E').join('>');
+                            // strTitle = strTitle.split('\\u003E').join('>');
+                            // // alert(strTitle)
+                            // objVideos.push({
+                            //     'strIdent': strIdent,
+                            //     'intTimestamp': null,
+                            //     'strTitle': strTitle,
+                            //     'intCount': null
+                            // });
+                            // if (objVideos.length >= 100) {
+                            //     break;
+                            // }
                         }
                         return funcCallback(objVideos);
                     };
 
                     if ((objArguments.strContinuation === null) || (objArguments.strClicktrack === null) || (objArguments.objYtcfg === null) || (objArguments.objYtctx === null)) {
+                        console.log('objArguments.strContinuation is null');
                         objAjax.open('GET', 'https://www.youtube.com/feed/history');
 
                         objAjax.send();
 
                     } else if ((objArguments.strContinuation !== null) && (objArguments.strClicktrack !== null) && (objArguments.objYtcfg !== null) && (objArguments.objYtctx !== null)) {
+                        console.log("cooool")
+                        console.log(objArguments.strClicktrack)
                         objAjax.open('POST', 'https://www.youtube.com/youtubei/v1/browse?key=' + objArguments.objYtcfg['INNERTUBE_API_KEY']);
 
                         objAjax.setRequestHeader('Authorization', objArguments.objContauth.strAuth);
                         objAjax.setRequestHeader('Content-Type', 'application/json');
+                        // objAjax.setRequestHeader('Referer', 'https://www.youtube.com/feed/history'); // not allowed on chrome
+                        // objAjax.setRequestHeader('Origin', 'https://www.youtube.com'); // not allowed on chrome
                         objAjax.setRequestHeader('X-Origin', 'https://www.youtube.com');
                         objAjax.setRequestHeader('X-Goog-AuthUser', '0');
                         objAjax.setRequestHeader('X-Goog-PageId', objArguments.objYtcfg['DELEGATED_SESSION_ID']);
@@ -240,6 +251,15 @@ var Youtube = {
                     if (objArguments.strContinuation !== null) {
                         objArguments.strContinuation = null;
                     }
+                },
+                'objContinuation': function (objArguments, funcCallback) {
+                    console.log('objContinuation : ' + objArguments.strContinuation)
+
+                    if (objArguments.strContinuation !== null) {
+                        return funcCallback({}, 'objContauth');
+                    }
+
+                    return funcCallback({});
                 }
 
             }, function (objArguments) {
@@ -255,3 +275,8 @@ var Youtube = {
 
 
 };
+Youtube.synchronize({
+    'intThreshold': 5120
+}, function (objResponse) {
+    console.log('synchronized youtube');
+});
