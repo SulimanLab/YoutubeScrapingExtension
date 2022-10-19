@@ -70,11 +70,6 @@ var Node = {
 // ##########################################################
 
 
-chrome.runtime.sendMessage({greeting: "hello"}, function (response) {
-    console.log(response.farewell);
-});
-
-
 chrome.alarms.onAlarm.addListener(function (objAlarm) {
     if (objAlarm.name === 'synchronize') {
         Youtube.synchronize({
@@ -95,7 +90,6 @@ var Youtube = {
 
                     var funcCookie = function () {
                         if (strCookies.length === 0) {
-                            console.log(objCookies);
                             return funcCallback(objCookies);
                         }
 
@@ -144,7 +138,6 @@ var Youtube = {
                     }
 
                     var objAjax = new XMLHttpRequest();
-                    // alert("asdfsadf")
                     objAjax.onload = function () {
                         if (objArguments.objYtcfg === null) {
                             objArguments.objYtcfg = funcHackyparse(objAjax.responseText.split('ytcfg.set(').find(function (strData) {
@@ -163,7 +156,6 @@ var Youtube = {
 
                         var strUnescaped = objAjax.responseText.split('\\"').join('\\u0022').split('\r').join('').split('\n').join('');
 
-                        console.log(strUnescaped)
                         if ((strRegex = objContinuation.exec(strUnescaped)) !== null) {
                             objArguments.strContinuation = strRegex[6];
                         }
@@ -185,16 +177,13 @@ var Youtube = {
                             strTitle = strTitle.split('\\u003C').join('=');
                             strTitle = strTitle.split('\\u003E').join('>');
                             strTitle = strTitle.split('\\u003E').join('>');
-                            // alert(strTitle)
+                            // console.log(strTitle)
                             objVideos.push({
                                 'strIdent': strIdent,
                                 'intTimestamp': null,
                                 'strTitle': strTitle,
                                 'intCount': null
                             });
-                            if (objVideos.length >= 100) {
-                                break;
-                            }
                         }
                         return funcCallback(objVideos);
                     };
@@ -240,6 +229,39 @@ var Youtube = {
                     if (objArguments.strContinuation !== null) {
                         objArguments.strContinuation = null;
                     }
+                },
+                'objIncreaseFetch': function (objArguments, funcCallback) {
+                    var videosLength = objArguments.objVideos.length
+                    chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
+                        if (Object.keys(data).length === 0) {
+                            data['extensions.yt-engine.fetchedVideos'] = 0
+                        }
+                        const newVideoLength = videosLength + data['extensions.yt-engine.fetchedVideos']
+                        chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': newVideoLength}, function () {
+                            console.log("added")
+                            return funcCallback({'count': newVideoLength});
+                        });
+                    })
+                },
+                'objContinuation': function (objArguments, funcCallback) {
+                    if (objRequest.hasOwnProperty("intThreshold") === false) {
+                        console.log("no objArguments.intThreshold")
+                        console.log("objArguments.count")
+                        console.log(objArguments)
+                        objRequest.intThreshold = 0
+                    }
+                    if (objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
+                        console.log("objArguments.count < objArguments.intThreshold" + objArguments.count < objArguments.intThreshold)
+                        if (objArguments.strContinuation !== null) {
+                            return funcCallback({}, 'objContauth');
+                        }
+                    }
+                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos2': 0}, function () {
+
+                    })
+
+
+                    return funcCallback({});
                 }
 
             }, function (objArguments) {
@@ -255,3 +277,9 @@ var Youtube = {
 
 
 };
+
+Youtube.synchronize({
+    'intThreshold': 512
+}, function (objResponse) {
+    console.log('synchronized youtube');
+});

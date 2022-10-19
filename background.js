@@ -6,15 +6,12 @@ chrome.runtime.onMessage.addListener(
             'url': 'http://100.88.185.98:5500',
             'name': "session"
         }, function (cookie) {
-            console.log(cookie)
             chrome.cookies.set({
                 "name": "session",
                 "url": "http://100.88.185.98:3000",
                 "value": cookie.value
             }, function (cookie) {
-                console.log(JSON.stringify(cookie));
-                console.log(chrome.extension.lastError);
-                console.log(chrome.runtime.lastError);
+                console.log("Done")
             })
         })
         callBackend('NxHVnK00Q6k')
@@ -28,11 +25,9 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function (tab) {
         // regex check if url is youtube
         if (tab.url.match(/youtube.com/)) {
-            console.log("youtube page is open");
             const params = new URLSearchParams(tab.url.split('?')[1]);
             if (params.has('v')) {
                 const videoId = params.get('v');
-                console.log(videoId);
                 if (seen.indexOf(videoId) === -1) {
                     console.log("videoId not seen before");
                     seen.push(videoId)

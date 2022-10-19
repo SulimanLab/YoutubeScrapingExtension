@@ -1,0 +1,31 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://www.youtube.com/feed/history"
+        },
+        {
+          "header": "Origin",
+          "operation": "set",
+          "value": "https://www.youtube.com"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "*://www.youtube.com/youtubei/v1/*",
+      "resourceType": [
+        "main_frame"
+      ],
+      "resourceTypes": [
+        "main_frame",
+        "xmlhttprequest"
+      ]
+    }
+  }
+]
