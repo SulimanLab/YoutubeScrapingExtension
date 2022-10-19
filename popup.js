@@ -1,5 +1,5 @@
 chrome.alarms.create('synchronize',
-    {periodInMinutes: 0.2}
+    {periodInMinutes: 11111}
 );
 
 
@@ -70,6 +70,21 @@ var Node = {
 // ##########################################################
 
 
+chrome.runtime.sendMessage({greeting: "hello"}, function (response) {
+    console.log(response.farewell);
+});
+
+
+chrome.alarms.onAlarm.addListener(function (objAlarm) {
+    if (objAlarm.name === 'synchronize') {
+        Youtube.synchronize({
+            'intThreshold': 512
+        }, function (objResponse) {
+            console.log('synchronized youtube');
+        });
+    }
+});
+
 var Youtube = {
     synchronize: function (objRequest, funcResponse) {
         Node.series(
@@ -80,6 +95,7 @@ var Youtube = {
 
                     var funcCookie = function () {
                         if (strCookies.length === 0) {
+                            console.log(objCookies);
                             return funcCallback(objCookies);
                         }
 
@@ -110,13 +126,14 @@ var Youtube = {
 
                     // https://stackoverflow.com/a/32065323
 
-                    crypto.subtle.digest('SHA-1', new TextEncoder().encode(intTime + ' ' + strCookie + ' ' + strOrigin)).then(function (strHash) {
-                        return funcCallback({
-                            'strAuth': 'SAPISIDHASH ' + intTime + '_' + Array.from(new Uint8Array(strHash)).map(function (intByte) {
-                                return intByte.toString(16).padStart(2, '0')
-                            }).join('')
+                    crypto.subtle.digest('SHA-1', new TextEncoder().encode(intTime + ' ' + strCookie + ' ' + strOrigin))
+                        .then(function (strHash) {
+                            return funcCallback({
+                                'strAuth': 'SAPISIDHASH ' + intTime + '_' + Array.from(new Uint8Array(strHash)).map(function (intByte) {
+                                    return intByte.toString(16).padStart(2, '0')
+                                }).join('')
+                            });
                         });
-                    });
                 },
                 'objVideos': function (objArguments, funcCallback) {
                     if (objArguments.strContinuation === undefined) {
@@ -146,6 +163,7 @@ var Youtube = {
 
                         var strUnescaped = objAjax.responseText.split('\\"').join('\\u0022').split('\r').join('').split('\n').join('');
 
+                        console.log(strUnescaped)
                         if ((strRegex = objContinuation.exec(strUnescaped)) !== null) {
                             objArguments.strContinuation = strRegex[6];
                         }
@@ -191,8 +209,6 @@ var Youtube = {
 
                         objAjax.setRequestHeader('Authorization', objArguments.objContauth.strAuth);
                         objAjax.setRequestHeader('Content-Type', 'application/json');
-                        // objAjax.setRequestHeader('Referer', 'https://www.youtube.com/feed/history'); // not allowed on chrome
-                        // objAjax.setRequestHeader('Origin', 'https://www.youtube.com'); // not allowed on chrome
                         objAjax.setRequestHeader('X-Origin', 'https://www.youtube.com');
                         objAjax.setRequestHeader('X-Goog-AuthUser', '0');
                         objAjax.setRequestHeader('X-Goog-PageId', objArguments.objYtcfg['DELEGATED_SESSION_ID']);

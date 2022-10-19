@@ -1,27 +1,40 @@
-// when tab changes, print url
-// decrease thread race condition occurrence
 const seen = [];
 
-chrome.alarms.onAlarm.addListener(function (objAlarm) {
-    if (objAlarm.name === 'synchronize') {
-        Youtube.synchronize({
-            'intThreshold': 512
-        }, function (objResponse) {
-            console.log('synchronized youtube');
-        });
+chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+        chrome.cookies.get({
+            'url': 'http://100.88.185.98:5500',
+            'name': "session"
+        }, function (cookie) {
+            console.log(cookie)
+            chrome.cookies.set({
+                "name": "session",
+                "url": "http://100.88.185.98:3000",
+                "value": cookie.value
+            }, function (cookie) {
+                console.log(JSON.stringify(cookie));
+                console.log(chrome.extension.lastError);
+                console.log(chrome.runtime.lastError);
+            })
+        })
+        callBackend('NxHVnK00Q6k')
+        sendResponse({farewell: "goodbye"});
+
     }
-});
+);
+
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function (tab) {
         // regex check if url is youtube
         if (tab.url.match(/youtube.com/)) {
-            // console.log("onActivated");
-            //lock
+            console.log("youtube page is open");
             const params = new URLSearchParams(tab.url.split('?')[1]);
             if (params.has('v')) {
                 const videoId = params.get('v');
+                console.log(videoId);
                 if (seen.indexOf(videoId) === -1) {
+                    console.log("videoId not seen before");
                     seen.push(videoId)
                     setVideoId(videoId).then(function (result) {
                         if (result) {
@@ -52,12 +65,18 @@ function callBackend(videoId) {
     // call backend with search params
 
 
-    var url = new URL('http://localhost:5500')
-    var params = {videoId: videoId}
+    const url = new URL('http://100.88.185.98:5500');
+    const params = {videoId: videoId};
     url.search = new URLSearchParams(params).toString();
-    fetch(url).then(function (response) {
-        console.log(response)
-    })
+    console.log(url)
+    fetch(url)
+        .then(function (response) {
+            console.log(response)
+        }).catch(function (error) {
+            console.error(error)
+        }
+    )
+
 
 }
 
