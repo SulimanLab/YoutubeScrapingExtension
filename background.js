@@ -1,24 +1,26 @@
 const seen = [];
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-        chrome.cookies.get({
-            'url': 'http://100.88.185.98:5500',
-            'name': "session"
-        }, function (cookie) {
-            chrome.cookies.set({
-                "name": "session",
-                "url": "http://100.88.185.98:3000",
-                "value": cookie.value
-            }, function (cookie) {
-                console.log("Done")
-            })
-        })
-        callBackend('NxHVnK00Q6k')
-        sendResponse({farewell: "goodbye"});
+const BACKEND_URL = "http://100.88.185.98";
 
-    }
-);
+// chrome.runtime.onMessage.addListener(
+//     function (request, sender, sendResponse) {
+//         chrome.cookies.get({
+//             'url': BACKEND_URL + ":5500",
+//             'name': "session"
+//         }, function (cookie) {
+//             chrome.cookies.set({
+//                 "name": "session",
+//                 "url": BACKEND_URL + ":3000",
+//                 "value": cookie.value
+//             }, function (cookie) {
+//                 console.log("Done")
+//             })
+//         })
+//         callBackend('NxHVnK00Q6k')
+//         sendResponse({farewell: "goodbye"});
+//
+//     }
+// );
 
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
@@ -60,7 +62,7 @@ function callBackend(videoId) {
     // call backend with search params
 
 
-    const url = new URL('http://100.88.185.98:5500');
+    const url = new URL(BACKEND_URL + ':5500');
     const params = {videoId: videoId};
     url.search = new URLSearchParams(params).toString();
     console.log(url)

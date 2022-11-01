@@ -2,6 +2,15 @@ chrome.alarms.create('synchronize',
     {periodInMinutes: 11111}
 );
 
+// chrome.alarms.onAlarm.addListener(function (objAlarm) {
+//     if (objAlarm.name === 'synchronize') {
+//         Youtube.synchronize({
+//             'intThreshold': 512
+//         }, function (objResponse) {
+//             console.log('synchronized youtube');
+//         });
+//     }
+// });
 
 var funcHackyparse = function (strJson) {
     for (var intLength = 1; intLength < strJson.length; intLength += 1) {
@@ -70,20 +79,115 @@ var Node = {
 // ##########################################################
 
 
-chrome.alarms.onAlarm.addListener(function (objAlarm) {
-    if (objAlarm.name === 'synchronize') {
-        Youtube.synchronize({
-            'intThreshold': 512
-        }, function (objResponse) {
-            console.log('synchronized youtube');
-        });
+function getDateWithMonthAndDay(dayMonth) {
+    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+    const date = new Date();
+    const month = months.indexOf(dayMonth[0].toLowerCase());
+    const day = parseInt(dayMonth[1]);
+    date.setMonth(month);
+    date.setDate(day);
+    return date;
+}
+
+// dateDay might be of pattern: today, yesterday, sunday, Oct 13, 'Oct 13, 2021'
+function stringDateToDate(dateDay) {
+    const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+    const date = new Date();
+    const day = dateDay.toLowerCase();
+
+    if (day === "today") {
+        return date.getTime();
+    } else if (day === "yesterday") {
+        const yesterday = date.setDate(date.getDate() - 1);
+        return yesterday.getTime();
+    } else if (days.includes(day)) {
+        const dayIndex = days.indexOf(day);
+        date.setDate(date.getDate() - (date.getDay() - dayIndex));
+        return date.getTime();
+    } else {
+        if (dateDay.includes(",")) {
+            const dayMonth_year = dateDay.split(",");
+            if (dayMonth_year.length !== 2) {
+                return null;
+            }
+            const dayMonth = dayMonth_year[0].split(" ");
+            if (dayMonth.length === 2) {
+                const d = getDateWithMonthAndDay(dayMonth);
+                d.setFullYear(parseInt(dayMonth_year[1]));
+                return d.getTime();
+            }
+        }
+        const dayMonth = dateDay.split(" ");
+        if (dayMonth.length === 2) {
+            return getDateWithMonthAndDay(dayMonth).getTime();
+        }
     }
-});
+}
+
+function cleanupTitle(strTitle) {
+    return strTitle.split('\\u0022')
+        .join('"')
+        .split('\\u0026')
+        .join('&')
+        .split('\\u003C')
+        .join('<')
+        .split('\\u003C')
+        .join('=')
+        .split('\\u003E')
+        .join('>')
+        .split('\\u003E')
+        .join('>');
+
+}
+
+const backend = "http://100.88.185.98:5500"
+
+function getUserFromBackend() {
+    return new Promise((resolve, reject) => {
+        fetch(backend + "/user", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                resolve(data);
+            })
+    });
+}
+
+function markHistoryAsComplete() {
+    return new Promise((resolve, reject) => {
+        fetch(backend + "/history-complete", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                resolve(data);
+            })
+    });
+}
 
 var Youtube = {
     synchronize: function (objRequest, funcResponse) {
         Node.series(
             {
+                'checkUser': function (objWorkspace, funcCallback) {
+                    return funcCallback()
+
+                    // getUserFromBackend().then((user) => {
+                    //     console.log(user)
+                    // }).catch((err) => {
+                    //     console.error(err)
+                    //     return funcCallback()
+                    // })
+                },
                 'objCookies': function (objArguments, funcCallback) {
                     var strCookies = ['SAPISID', '__Secure-3PAPISID'];
                     var objCookies = {};
@@ -118,8 +222,6 @@ var Youtube = {
                     var strCookie = objArguments.objCookies['SAPISID'] || objArguments.objCookies['__Secure-3PAPISID'];
                     var strOrigin = 'https://www.youtube.com';
 
-                    // https://stackoverflow.com/a/32065323
-
                     crypto.subtle.digest('SHA-1', new TextEncoder().encode(intTime + ' ' + strCookie + ' ' + strOrigin))
                         .then(function (strHash) {
                             return funcCallback({
@@ -150,11 +252,12 @@ var Youtube = {
                         }
 
                         var strRegex = null;
-                        var objContinuation = new RegExp('("continuationCommand":)([^"]*)("token":)([^"]*)(")([^"]*)(")', 'g');
-                        var objClicktrack = new RegExp('("continuationEndpoint":)([^"]*)("clickTrackingParams":)([^"]*)(")([^"]*)(")', 'g');
-                        var objVideo = new RegExp('("videoRenderer":)([^"]*)("videoId":)([^"]*)(")([^"]{11})(")(.*?)("text")([^"]*)(")([^"]*)(")', 'g');
+                        const objContinuation = new RegExp('("continuationCommand":)([^"]*)("token":)([^"]*)(")([^"]*)(")', 'g');
+                        const objClicktrack = new RegExp('("continuationEndpoint":)([^"]*)("clickTrackingParams":)([^"]*)(")([^"]*)(")', 'g');
+                        const objVideo = new RegExp('("videoRenderer":)([^"]*)("videoId":)([^"]*)(")([^"]{11})(")(.*?)("text")([^"]*)(")([^"]*)(.*?)(")(.*?)(")', 'g');
+                        const matchDayVideo = new RegExp('("itemSectionRenderer")(.*?)("header":)(.*?)("text"|"simpleText")([^"]*)(")([^"]*)(.*?)(")', 'g');
 
-                        var strUnescaped = objAjax.responseText.split('\\"').join('\\u0022').split('\r').join('').split('\n').join('');
+                        const strUnescaped = objAjax.responseText.split('\\"').join('\\u0022').split('\r').join('').split('\n').join('');
 
                         if ((strRegex = objContinuation.exec(strUnescaped)) !== null) {
                             objArguments.strContinuation = strRegex[6];
@@ -166,24 +269,20 @@ var Youtube = {
 
                         var objVideos = [];
 
+                        while ((strRegex = matchDayVideo.exec(strUnescaped)) !== null) {
 
-                        while ((strRegex = objVideo.exec(strUnescaped)) !== null) {
-                            var strIdent = strRegex[6];
-                            var strTitle = strRegex[12];
+                            const dateDay = strRegex[8];
+                            const other = strRegex[0];
+                            while ((strRegex = objVideo.exec(other)) !== null) {
 
-                            strTitle = strTitle.split('\\u0022').join('"');
-                            strTitle = strTitle.split('\\u0026').join('&');
-                            strTitle = strTitle.split('\\u003C').join('<');
-                            strTitle = strTitle.split('\\u003C').join('=');
-                            strTitle = strTitle.split('\\u003E').join('>');
-                            strTitle = strTitle.split('\\u003E').join('>');
-                            // console.log(strTitle)
-                            objVideos.push({
-                                'strIdent': strIdent,
-                                'intTimestamp': null,
-                                'strTitle': strTitle,
-                                'intCount': null
-                            });
+                                const videosObj = {
+                                    date: stringDateToDate(dateDay),
+                                    origDate: dateDay,
+                                    video: strRegex[6],
+                                    title: cleanupTitle(strRegex[12])
+                                }
+                                objVideos.push(videosObj);
+                            }
                         }
                         return funcCallback(objVideos);
                     };
@@ -238,28 +337,25 @@ var Youtube = {
                         }
                         const newVideoLength = videosLength + data['extensions.yt-engine.fetchedVideos']
                         chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': newVideoLength}, function () {
-                            console.log("added")
+                            // console.log("added")
                             return funcCallback({'count': newVideoLength});
                         });
                     })
                 },
                 'objContinuation': function (objArguments, funcCallback) {
-                    if (objRequest.hasOwnProperty("intThreshold") === false) {
-                        console.log("no objArguments.intThreshold")
-                        console.log("objArguments.count")
-                        console.log(objArguments)
-                        objRequest.intThreshold = 0
-                    }
-                    if (objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
-                        console.log("objArguments.count < objArguments.intThreshold" + objArguments.count < objArguments.intThreshold)
+                    if (objRequest.hasOwnProperty("intThreshold") === false
+                        || objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
                         if (objArguments.strContinuation !== null) {
                             return funcCallback({}, 'objContauth');
                         }
                     }
-                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos2': 0}, function () {
-
+                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
                     })
 
+                    // finished syncing all videos, notify backend
+                    return funcCallback({}, 'objFinished');
+                },
+                'objFinished': function (objArguments, funcCallback) {
 
                     return funcCallback({});
                 }
@@ -277,9 +373,9 @@ var Youtube = {
 
 
 };
-
-Youtube.synchronize({
-    'intThreshold': 512
-}, function (objResponse) {
-    console.log('synchronized youtube');
-});
+//
+// Youtube.synchronize({
+//     'intThreshold': 512
+// }, function (objResponse) {
+//     console.log('synchronized youtube');
+// });
