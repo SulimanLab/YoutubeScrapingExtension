@@ -1,7 +1,7 @@
 {
   "name": "YT-engine",
   "description": "Search all your watched videos on YouTube",
-  "version": "1.0",
+  "version": "0.0.1",
   "manifest_version": 3,
   "background": {
     "type": "module",
@@ -10,15 +10,7 @@
   "permissions": [
     "storage",
     "tabs",
-    "activeTab",
-    "alarms",
-    "downloads",
-    "history",
-    "scripting",
-    "webNavigation",
     "cookies",
-    "identity",
-    "identity.email",
     "declarativeNetRequestWithHostAccess"
   ],
   "action": {

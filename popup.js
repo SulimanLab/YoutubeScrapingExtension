@@ -1,6 +1,6 @@
-chrome.alarms.create('synchronize',
-    {periodInMinutes: 11111}
-);
+// chrome.alarms.create('synchronize',
+//     {periodInMinutes: 11111}
+// );
 
 // chrome.alarms.onAlarm.addListener(function (objAlarm) {
 //     if (objAlarm.name === 'synchronize') {

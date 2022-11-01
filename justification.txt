@@ -1,0 +1,30 @@
+
+Single purpose:
+YT-engine allows the user to search for keywords, phrases and semantics cross all videos he has watched in youtube. Keeping track of watched videos is required for this app to work.
+
+HOST PERMISSION:
+This app access the communicate with the YT-engine backend app to index the caption from youtube, which requires the host permission
+
+
+
+declarativeNetRequestWithHostAccess:
+In order to send the request for youtube, intercepting the request and adding some headers is required.
+
+
+cookies:
+YT-engine populate iframe, to unified the user experience inside the extension and outside it. By accessing the cookies, we can allow the user to login once and get authorized inside the iframe and out.
+
+
+webNavigation:
+it is not required, will delete it in next version.
+
+tabs:
+YT-engine actively listen for any video you watch to index it by using our text search engine
+
+
+tabs:
+YT-engine actively listen for any video you watch to index it by using our text search engine
+
+
+storage:
+To minimize the number of hits, the app cache all indexed videos in the local storage, and checks the new videos whether it's already indexed or not.
