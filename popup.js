@@ -1,16 +1,5 @@
-// chrome.alarms.create('synchronize',
-//     {periodInMinutes: 11111}
-// );
-
-// chrome.alarms.onAlarm.addListener(function (objAlarm) {
-//     if (objAlarm.name === 'synchronize') {
-//         Youtube.synchronize({
-//             'intThreshold': 512
-//         }, function (objResponse) {
-//             console.log('synchronized youtube');
-//         });
-//     }
-// });
+const BACKEND_URL = "http://100.88.185.98";
+// get user info from backend
 
 var funcHackyparse = function (strJson) {
     for (var intLength = 1; intLength < strJson.length; intLength += 1) {
@@ -142,11 +131,10 @@ function cleanupTitle(strTitle) {
 
 }
 
-const backend = "http://100.88.185.98:5500"
 
 function getUserFromBackend() {
     return new Promise((resolve, reject) => {
-        fetch(backend + "/user", {
+        fetch(BACKEND_URL + ":5500" + "/user", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

@@ -1,0 +1,23 @@
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 116-980-155
+INFO:werkzeug: * Detected change in '/home/suliman/PycharmProjects/yt-engine/main.py', reloading
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 116-980-155
+INFO:werkzeug:127.0.0.1 - - [29/Oct/2022 21:28:24] "[31m[1mPOST /?videoId=ecK3EnyGD8o HTTP/1.1[0m" 405 -
+INFO:root:Indexing video with id: ecK3EnyGD8o
+INFO:werkzeug:127.0.0.1 - - [29/Oct/2022 21:28:28] "[35m[1mGET /?videoId=ecK3EnyGD8o HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in '/home/suliman/PycharmProjects/yt-engine/main.py', reloading
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 116-980-155
+INFO:werkzeug: * Detected change in '/home/suliman/PycharmProjects/yt-engine/main.py', reloading
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 116-980-155
+INFO:root:Indexing video with id: ecK3EnyGD8o
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.youtube.com:443
+DEBUG:urllib3.connectionpool:https://www.youtube.com:443 "GET /watch?v=ecK3EnyGD8o HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.youtube.com:443
+DEBUG:urllib3.connectionpool:https://www.youtube.com:443 "GET /api/timedtext?v=ecK3EnyGD8o&caps=asr&xoaf=5&hl=ar&ip=0.0.0.0&ipbits=0&expire=1667093344&sparams=ip,ipbits,expire,v,caps,xoaf&signature=EAE1BD01AB1C9743A9ADD1A05D464BC22C63268B.839F8EE4C4E527A5C08B531B0BFCBDBA4333F60D&key=yt8&kind=asr&lang=en HTTP/1.1" 200 None
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): youtube.com:443
+DEBUG:urllib3.connectionpool:https://youtube.com:443 "GET /oembed?url=https://www.youtube.com/watch?v=ecK3EnyGD8o&format=json HTTP/1.1" 200 None
+INFO:werkzeug:127.0.0.1 - - [29/Oct/2022 21:29:07] "[35m[1mGET /?videoId=ecK3EnyGD8o HTTP/1.1[0m" 500 -
+INFO:werkzeug: * Detected change in '/home/suliman/PycharmProjects/yt-engine/main.py', reloading

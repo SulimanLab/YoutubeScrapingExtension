@@ -3,14 +3,32 @@
 <head>
 
     <link rel="stylesheet" href="button.css">
+    <!--    <link rel="stylesheet" href="style.css">-->
     <script type="text/javascript" src="jquery.js"></script>
-    <script type="text/javascript" src="popup.js"></script>
-    <title>YutUp</title>
-    <!--    <link rel="stylesheet" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css">-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 
+    <!-- Compiled and minified JavaScript -->
+    <!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>-->
+
+    <script type="text/javascript" src="popup.js"></script>
+
+    <title>YT-engine</title>
 </head>
 <body>
 
-<iframe class="page_root" id="todoist_frame" src="http://100.88.185.98:3000"></iframe>
+<div id="main" class='card-content'>
+    <div style="margin-bottom: 8px">
+        <h4 id="username" class="name"></h4>
+        <a id="logout" class="waves-effect waves-light btn" role="button">Log out
+        </a>
+    </div>
+</div>
+
+<div>
+    <a id="login" class="waves-effect waves-light btn" role="button">Login</a>
+
+</div>
+<script src="script.js"></script>
+
 </body>
 </html>
