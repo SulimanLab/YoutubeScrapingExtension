@@ -3,6 +3,7 @@ getUserFromBackend()
 
 document.getElementById("login").addEventListener("click", openPage);
 document.getElementById("logout").addEventListener("click", logout);
+document.getElementById("loadHistory").addEventListener("click", loadHistory);
 
 function getUserFromBackend() {
 
@@ -34,6 +35,32 @@ function openPage() {
     window.open(BACKEND_URL + ":3000");
 }
 
+function dd(response, resolve, reject) {
+    setTimeout(() => {
+        if (response.complete) {
+            resolve();
+        } else {
+            reject('Something wrong');
+        }
+    }, 100000)
+
+}
+
+function loadHistory() {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({greeting: "dd", cccc: new XMLHttpRequest()}, function (response) {
+            console.log(response)
+            if (response === undefined) {
+                dd(response, resolve, reject)
+            }
+
+
+        });
+    });
+
+    // loadHistoryFunc(dd);
+}
+
 function logout() {
     document.getElementById("logout").innerText = "Logging out..."
     fetch(BACKEND_URL + ":5500" + "/logout", {
@@ -54,3 +81,4 @@ function logout() {
             console.log(error)
         })
 }
+

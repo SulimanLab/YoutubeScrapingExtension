@@ -17,10 +17,25 @@
 <body>
 
 <div id="main" class='card-content'>
-    <div style="margin-bottom: 8px">
-        <h4 id="username" class="name"></h4>
-        <a id="logout" class="waves-effect waves-light btn" role="button">Log out
-        </a>
+    <div style="margin-bottom: 8px; justify-content: space-between; display: flex; flex-direction: column;height: 100%">
+
+        <div style="display: flex; flex-direction: column; margin-bottom: 10px;height: 50%;justify-content: space-around;">
+            <span id="username" class="name"></span>
+            <div style="justify-content: center; align-items: center; display: flex; flex-direction: column">
+                <a id="loadHistory" style="margin-bottom: 10px"
+                   class="waves-effect btn accent-3" role="button">Load History</a>
+                <div id="loading-parent" style="display: none">
+                    <span id="loading" class="loading"> 500 </span>
+                    <span id="loading2" class="loading"> Videos loaded </span>
+                </div>
+            </div>
+            <!--            history progress-->
+        </div>
+        <div style="display: flex; justify-content: center">
+            <a id="logout" class="waves-effect waves-light" role="button">Log out
+            </a>
+
+        </div>
     </div>
 </div>
 

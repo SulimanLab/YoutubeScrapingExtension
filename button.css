@@ -57,9 +57,19 @@ input {
 input, select, textarea {
     color: #ff0000;
 }
+.loading{
+    /*font-weight: 500;*/
+    font-size: 15px;
+    /*background: hsl(77deg 27% 37% / 12%);*/
+    width: 100%;
+    animation: loading 1s infinite;
+}
 .name{
-    size: 30px;
-    margin-bottom: 10px;
+    font-weight: 500;
+    font-size: 2rem;
+    margin-bottom: 15px;
+    margin-top: 3rem;
+
 }
 .mdc-button{
     display: flex;
@@ -70,6 +80,7 @@ input, select, textarea {
 .card-content{
     margin: 10px;
     display: flex;
+    height: 100%;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -81,8 +92,8 @@ input, select, textarea {
     margin: 1rem;
 }
 body, .page_root {
-    height: 120px;
-    width: 180px;
+    height: 240px;
+    width: 280px;
     display: flex;
     flex-direction: column;
     padding: 0;

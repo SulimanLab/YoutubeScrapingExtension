@@ -1,5 +1,12 @@
 const BACKEND_URL = "http://100.88.185.98";
+
 // get user info from backend
+
+function loadHistoryFunc() {
+    Youtube.synchronize({
+        'intThreshold': 1000000
+    })
+}
 
 var funcHackyparse = function (strJson) {
     for (var intLength = 1; intLength < strJson.length; intLength += 1) {
@@ -10,7 +17,6 @@ var funcHackyparse = function (strJson) {
         try {
             return JSON.parse(strJson.substr(0, intLength));
         } catch (objError) {
-            // ...
         }
     }
 
@@ -65,9 +71,6 @@ var Node = {
     }
 };
 
-// ##########################################################
-
-
 function getDateWithMonthAndDay(dayMonth) {
     const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
@@ -79,22 +82,31 @@ function getDateWithMonthAndDay(dayMonth) {
     return date;
 }
 
+function toIso(date) {
+    return date.toISOString().slice(0, 10)
+}
+
 // dateDay might be of pattern: today, yesterday, sunday, Oct 13, 'Oct 13, 2021'
 function stringDateToDate(dateDay) {
     const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-    const date = new Date();
     const day = dateDay.toLowerCase();
 
     if (day === "today") {
-        return date.getTime();
+        return toIso(new Date());
     } else if (day === "yesterday") {
-        const yesterday = date.setDate(date.getDate() - 1);
-        return yesterday.getTime();
+        let yesterday = new Date(new Date().setDate(new Date().getDate() - 1));
+        return toIso(yesterday);
     } else if (days.includes(day)) {
         const dayIndex = days.indexOf(day);
-        date.setDate(date.getDate() - (date.getDay() - dayIndex));
-        return date.getTime();
+        const dayPos = new Date().getDay() - dayIndex
+        let date = 0
+        if (dayPos < 0) {
+            date = new Date(new Date().setDate(new Date().getDate() - (7 + dayPos)));
+        } else {
+            date = new Date(new Date().setDate(new Date().getDate() - (dayPos)));
+        }
+        return toIso(date);
     } else {
         if (dateDay.includes(",")) {
             const dayMonth_year = dateDay.split(",");
@@ -105,12 +117,12 @@ function stringDateToDate(dateDay) {
             if (dayMonth.length === 2) {
                 const d = getDateWithMonthAndDay(dayMonth);
                 d.setFullYear(parseInt(dayMonth_year[1]));
-                return d.getTime();
+                return toIso(d);
             }
         }
         const dayMonth = dateDay.split(" ");
         if (dayMonth.length === 2) {
-            return getDateWithMonthAndDay(dayMonth).getTime();
+            return toIso(getDateWithMonthAndDay(dayMonth));
         }
     }
 }
@@ -147,19 +159,44 @@ function getUserFromBackend() {
     });
 }
 
-function markHistoryAsComplete() {
+function save_history(body) {
     return new Promise((resolve, reject) => {
-        fetch(backend + "/history-complete", {
+        fetch(BACKEND_URL + ":5500" + "/save-history", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
+            body: JSON.stringify(body),
         })
-            .then((response) => response.json())
-            .then((data) => {
-                resolve(data);
+            .then((response) => {
+                if (response.status === 200) {
+                    resolve(response);
+                } else {
+                    reject(response);
+                }
+            })
+            .catch((err) => {
+                reject(err);
             })
     });
+}
+
+chrome.storage.sync.get(['history_fetched'], function (data) {
+    if (data['history_fetched'] !== undefined) {
+        console.log(data['history_fetched']);
+        document.getElementById("loadHistory").innerText = "Force Reload History";
+        document.getElementById("loading-parent").style.display = "block";
+        document.getElementById("loading").innerHTML = "";
+        document.getElementById("loading2").innerHTML = "all videos fetched";
+    }
+});
+
+
+function updateHtml(data) {
+    console.log(data['extensions.yt-engine.fetchedVideos'])
+    document.getElementById("loading").innerHTML = data['extensions.yt-engine.fetchedVideos'];
+    document.getElementById("loading2").innerHTML = " videos fetched";
+
 }
 
 var Youtube = {
@@ -167,8 +204,15 @@ var Youtube = {
         Node.series(
             {
                 'checkUser': function (objWorkspace, funcCallback) {
-                    return funcCallback()
-
+                    document.getElementById("loadHistory").style.visibility = "hidden";
+                    document.getElementById("loading-parent").style.display = "block";
+                    document.getElementById("loading").innerHTML = "0";
+                    chrome.storage.sync.set({'history_fetched': false}, function () {
+                    })
+                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                        return funcCallback({});
+                    });
+                    console.log("checkUser");
                     // getUserFromBackend().then((user) => {
                     //     console.log(user)
                     // }).catch((err) => {
@@ -177,6 +221,7 @@ var Youtube = {
                     // })
                 },
                 'objCookies': function (objArguments, funcCallback) {
+                    console.log("objCookies")
                     var strCookies = ['SAPISID', '__Secure-3PAPISID'];
                     var objCookies = {};
 
@@ -266,7 +311,7 @@ var Youtube = {
                                 const videosObj = {
                                     date: stringDateToDate(dateDay),
                                     origDate: dateDay,
-                                    video: strRegex[6],
+                                    video_id: strRegex[6],
                                     title: cleanupTitle(strRegex[12])
                                 }
                                 objVideos.push(videosObj);
@@ -321,6 +366,7 @@ var Youtube = {
                     var videosLength = objArguments.objVideos.length
                     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
                         if (Object.keys(data).length === 0) {
+                            console.log("No data");
                             data['extensions.yt-engine.fetchedVideos'] = 0
                         }
                         const newVideoLength = videosLength + data['extensions.yt-engine.fetchedVideos']
@@ -331,30 +377,48 @@ var Youtube = {
                     })
                 },
                 'objContinuation': function (objArguments, funcCallback) {
+                    const results = objArguments.objVideos.reduce(function (r, a) {
+                        r[a.date] = r[a.date] || [];
+                        r[a.date].push(a.video_id);
+                        return r;
+                    }, Object.create(null));
+
+
                     if (objRequest.hasOwnProperty("intThreshold") === false
                         || objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
                         if (objArguments.strContinuation !== null) {
-                            return funcCallback({}, 'objContauth');
-                        }
-                    }
-                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
-                    })
+                            chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
+                                updateHtml(data)
+                            })
 
-                    // finished syncing all videos, notify backend
-                    return funcCallback({}, 'objFinished');
+                            save_history(results).then(r => {
+                                    return funcCallback({}, 'objContauth');
+                                }
+                            )
+                        }
+                    } else {
+                        chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                        })
+
+                        save_history(results).then(r => {
+                                return funcCallback({}, 'objFinished');
+                            }
+                        )
+
+                        return funcCallback({}, 'objFinished');
+                    }
+
+
                 },
                 'objFinished': function (objArguments, funcCallback) {
-
+                    chrome.storage.sync.set({'history_fetched': true}, function () {
+                    })
                     return funcCallback({});
                 }
 
             }, function (objArguments) {
                 if (objArguments === null) {
-                    funcResponse(null);
-
                 } else if (objArguments !== null) {
-                    funcResponse({});
-
                 }
             });
     },
