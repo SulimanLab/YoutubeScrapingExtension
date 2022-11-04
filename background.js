@@ -285,16 +285,6 @@ function save_history(body) {
     });
 }
 
-chrome.storage.sync.get(['history_fetched'], function (data) {
-    if (data['history_fetched'] !== undefined) {
-        console.log(data['history_fetched']);
-        // document.getElementById("loadHistory").innerText = "Force Reload History";
-        // document.getElementById("loading-parent").style.display = "block";
-        // document.getElementById("loading").innerHTML = "";
-        // document.getElementById("loading2").innerHTML = "all videos fetched";
-    }
-});
-
 
 function updateHtml() {
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
@@ -383,6 +373,7 @@ var Youtube = {
             {
                 'checkUser': function (objWorkspace, funcCallback) {
                     if (objRequest.hasOwnProperty("fetchDelta") === true) {
+                        console.log("fetching delta check");
                         chrome.storage.sync.get(['extensions.yt-engine.user'], function (data) {
                             data = data['extensions.yt-engine.user']
                             if (data['lastDate'] !== null) {

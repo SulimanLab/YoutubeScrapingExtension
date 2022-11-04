@@ -25,9 +25,12 @@ function onClickOutside() {
 function fetchDelta() {
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (result) {
         if (result['extensions.yt-engine.fetchedVideos'] === 0) {
+            console.log("fetching delta")
             chrome.runtime.sendMessage({message: "fetchDelta"}, function (response) {
+                document.getElementById("loadHistory").style = "waves-effect btn accent-3";
             })
         } else {
+            console.log("fetching in progress, please wait")
         }
     })
 
@@ -43,9 +46,9 @@ function welcomeUser(user) {
             if (user["isHistoryFetched"]) {
                 document.getElementById("loadHistory").innerText = "Force Reload History";
                 document.getElementById("loading-parent").style.display = "block";
-                document.getElementById("loading").innerHTML = "";
                 document.getElementById("loading2").innerHTML = "last updated: " + user["lastDate"];
             } else if (result["extensions.yt-engine.fetchedVideos"] > 0) {
+                console.log(result["extensions.yt-engine.fetchedVideos"])
                 document.getElementById("loadHistory").style = "pointer-events: none; cursor: default; text-decoration: none; margin-bottom: 10px;" +
                     "    margin-bottom: 10px;\n" +
                     "    color: rgb(0 0 0 / 60%);\n" +
@@ -54,12 +57,12 @@ function welcomeUser(user) {
                     "    font-family: Roboto, Helvetica, Arial, sans-serif;\n" +
                     "    font-weight: 200;"
                 document.getElementById("loading-parent").style.display = "block";
-                document.getElementById("loading").innerHTML = "Loading ...";
+                document.getElementById("loading2").innerHTML = "Loading ...";
 
 
             } else {
                 document.getElementById("loading-parent").style.display = "none";
-                document.getElementById("loading").innerHTML = "Loading...";
+                document.getElementById("loading2").innerHTML = "Loading...";
             }
         }
     )
@@ -90,7 +93,9 @@ function getUserFromBackend() {
             }
         ).then((user) => {
         chrome.storage.sync.set({'extensions.yt-engine.user': user}, function () {
-            fetchDelta();
+            if (user["isHistoryFetched"]) {
+                fetchDelta();
+            }
             welcomeUser(user);
         })
     }).catch((error) => {
@@ -113,7 +118,6 @@ function openPage() {
 
 function loadHistory() {
     document.getElementById('modal1').style.display = 'block';
-    ;
 }
 
 function loadHistoryModal() {
@@ -129,7 +133,7 @@ function loadHistoryModal() {
         "    font-family: Roboto, Helvetica, Arial, sans-serif;\n" +
         "    font-weight: 200;"
     document.getElementById("loading-parent").style.display = "block";
-    document.getElementById("loading").innerHTML = "Loading ...";
+    document.getElementById("loading2").innerHTML = "Loading ...";
 }
 
 
