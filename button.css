@@ -57,27 +57,30 @@ input {
 input, select, textarea {
     color: #ff0000;
 }
-.loading{
+
+.loading {
     /*font-weight: 500;*/
     font-size: 15px;
     /*background: hsl(77deg 27% 37% / 12%);*/
     width: 100%;
     animation: loading 1s infinite;
 }
-.name{
+
+.name {
     font-weight: 500;
     font-size: 2rem;
     margin-bottom: 15px;
     margin-top: 3rem;
 
 }
-.mdc-button{
+
+.mdc-button {
     display: flex;
     justify-content: center;
     width: 80%;
 }
 
-.card-content{
+.card-content {
     margin: 10px;
     display: flex;
     height: 100%;
@@ -85,14 +88,25 @@ input, select, textarea {
     justify-content: center;
     align-items: center;
 }
+
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 10%;
+    z-index: 100;
+}
+
 .card .card-content {
     display: flex;
     flex-direction: column;
     justify-content: center;
     margin: 1rem;
 }
+
 body, .page_root {
-    height: 240px;
+    height: 340px;
     width: 280px;
     display: flex;
     flex-direction: column;

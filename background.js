@@ -2,27 +2,6 @@ const seen = [];
 
 const BACKEND_URL = "http://100.88.185.98";
 
-// chrome.runtime.onMessage.addListener(
-//     function (request, sender, sendResponse) {
-//         chrome.cookies.get({
-//             'url': BACKEND_URL + ":5500",
-//             'name': "session"
-//         }, function (cookie) {
-//             chrome.cookies.set({
-//                 "name": "session",
-//                 "url": BACKEND_URL + ":3000",
-//                 "value": cookie.value
-//             }, function (cookie) {
-//                 console.log("Done")
-//             })
-//         })
-//         callBackend('NxHVnK00Q6k')
-//         sendResponse({farewell: "goodbye"});
-//
-//     }
-// );
-
-
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function (tab) {
         // regex check if url is youtube
@@ -57,7 +36,6 @@ async function setVideoId(videoId) {
     })
 }
 
-// create a function to call the backend
 function callBackend(videoId) {
     // call backend with search params
 
@@ -77,8 +55,6 @@ function callBackend(videoId) {
 
 }
 
-
-//when url changes, print url
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     // console.log("updated");
     if (tab.url.match(/youtube.com/)) {
@@ -98,22 +74,35 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     }
 });
 
-// const BACKEND_URL = "http://100.88.185.98";
 
-// get user info from backend
-let cccc = null;
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
-        cccc = request.cccc;
-        console.log("cccc", cccc)
-        Youtube.synchronize({
-            'intThreshold': 100
-        }, function (objData) {
-            console.log(objData)
-            sendResponse({complete: true})
-        })
+        console.log(request.message)
+        if (request.message === "get_history") {
+            sendResponse({message: "history"});
+        } else if (request.message === "loadHistory") {
+            Youtube.synchronize({
+                'intThreshold': 1000
+            }, function (objData) {
+                sendResponse({complete: true})
+            })
+
+        } else if (request.message === "fetchDelta") {
+            Youtube.synchronize({
+                'fetchDelta': true,
+                'intThreshold': 1000
+            }, function (objData) {
+                sendResponse({complete: true})
+            })
+        }
+
     }
 );
+
+
+function send_message(message, callback) {
+    chrome.runtime.sendMessage({message: message}, callback);
+}
 
 function loadHistoryFunc(dd) {
     dd()
@@ -307,11 +296,85 @@ chrome.storage.sync.get(['history_fetched'], function (data) {
 });
 
 
-function updateHtml(data) {
-    console.log(data['extensions.yt-engine.fetchedVideos'])
-    // document.getElementById("loading").innerHTML = data['extensions.yt-engine.fetchedVideos'];
-    // document.getElementById("loading2").innerHTML = " videos fetched";
+function updateHtml() {
+    chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
+        console.log(data['extensions.yt-engine.fetchedVideos'])
+    })
 
+
+}
+
+function parseHTML(objArguments, responseText, funcCallback) {
+    // get username from responseText
+    try {
+        const objUsername = responseText.split("var ytInitialData = ")[1].split(";</script>")[0];
+        const asd = new RegExp('confirmDialogRenderer.*dialogMessages"([^"]*)"runs"([^"]*)"text":(.*)"bold', 'g');
+        const username_html = asd.exec(objUsername);
+        const username = username_html[3].split('"')[1];
+        console.log(username);
+    } catch (e) {
+        console.log(e);
+        // throw e;
+    }
+
+
+    if (objArguments.objYtcfg === null) {
+        objArguments.objYtcfg = funcHackyparse(responseText.split('ytcfg.set(').find(function (strData) {
+            return strData.indexOf('INNERTUBE_API_KEY') !== -1;
+        }).slice(0, -2));
+    }
+
+    if (objArguments.objYtctx === null) {
+        objArguments.objYtctx = funcHackyparse(responseText.split('"INNERTUBE_CONTEXT":')[1]);
+    }
+
+    var strRegex = null;
+    const objContinuation = new RegExp('("continuationCommand":)([^"]*)("token":)([^"]*)(")([^"]*)(")', 'g');
+    const objClicktrack = new RegExp('("continuationEndpoint":)([^"]*)("clickTrackingParams":)([^"]*)(")([^"]*)(")', 'g');
+    const objVideo = new RegExp('("videoRenderer":)([^"]*)("videoId":)([^"]*)(")([^"]{11})(")(.*?)("text")([^"]*)(")([^"]*)(.*?)(")(.*?)(")', 'g');
+    const matchDayVideo = new RegExp('("itemSectionRenderer")(.*?)("header":)(.*?)("text"|"simpleText")([^"]*)(")([^"]*)(.*?)(")', 'g');
+
+    const strUnescaped = responseText.split('\\"').join('\\u0022').split('\r').join('').split('\n').join('');
+
+    if ((strRegex = objContinuation.exec(strUnescaped)) !== null) {
+        objArguments.strContinuation = strRegex[6];
+    }
+
+    if ((strRegex = objClicktrack.exec(strUnescaped)) !== null) {
+        objArguments.strClicktrack = strRegex[6];
+    }
+
+    var objVideos = [];
+
+    while ((strRegex = matchDayVideo.exec(strUnescaped)) !== null) {
+
+        const dateDay = strRegex[8];
+        const other = strRegex[0];
+        while ((strRegex = objVideo.exec(other)) !== null) {
+
+            const videosObj = {
+                date: stringDateToDate(dateDay),
+                origDate: dateDay,
+                video_id: strRegex[6],
+                title: cleanupTitle(strRegex[12])
+            }
+            objVideos.push(videosObj);
+        }
+    }
+    return funcCallback(objVideos);
+}
+
+
+function mark_history_fetched() {
+    return fetch(BACKEND_URL + ":5500" + "/mark-history-fetched", {
+        method: "GET",
+    }).then((response) => {
+        if (response.status === 200) {
+            return response
+        } else {
+            throw new Error("Error fetching history")
+        }
+    })
 }
 
 var Youtube = {
@@ -319,24 +382,22 @@ var Youtube = {
         Node.series(
             {
                 'checkUser': function (objWorkspace, funcCallback) {
-                    // document.getElementById("loadHistory").style.visibility = "hidden";
-                    // document.getElementById("loading-parent").style.display = "block";
-                    // document.getElementById("loading").innerHTML = "0";
-                    chrome.storage.sync.set({'history_fetched': false}, function () {
-                    })
-                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
-                        return funcCallback({});
-                    });
-                    console.log("checkUser");
-                    // getUserFromBackend().then((user) => {
-                    //     console.log(user)
-                    // }).catch((err) => {
-                    //     console.error(err)
-                    //     return funcCallback()
-                    // })
+                    if (objRequest.hasOwnProperty("fetchDelta") === true) {
+                        chrome.storage.sync.get(['extensions.yt-engine.user'], function (data) {
+                            data = data['extensions.yt-engine.user']
+                            if (data['lastDate'] !== null) {
+                                return funcCallback({lastDate: data['lastDate']});
+                            }
+                        })
+                    } else {
+                        chrome.storage.sync.set({'history_fetched': false}, function () {
+                        })
+                        chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                            return funcCallback({});
+                        });
+                    }
                 },
                 'objCookies': function (objArguments, funcCallback) {
-                    console.log("objCookies")
                     var strCookies = ['SAPISID', '__Secure-3PAPISID'];
                     var objCookies = {};
 
@@ -356,7 +417,6 @@ var Youtube = {
 
                             } else if (objCookie !== null) {
                                 objCookies[strCookie] = objCookie.value;
-
                             }
 
                             funcCookie();
@@ -386,97 +446,96 @@ var Youtube = {
                         objArguments.objYtcfg = null;
                         objArguments.objYtctx = null;
                     }
-
-                    var objAjax = cccc
-                    objAjax.onload = function () {
-                        if (objArguments.objYtcfg === null) {
-                            objArguments.objYtcfg = funcHackyparse(objAjax.responseText.split('ytcfg.set(').find(function (strData) {
-                                return strData.indexOf('INNERTUBE_API_KEY') !== -1;
-                            }).slice(0, -2));
-                        }
-
-                        if (objArguments.objYtctx === null) {
-                            objArguments.objYtctx = funcHackyparse(objAjax.responseText.split('"INNERTUBE_CONTEXT":')[1]);
-                        }
-
-                        var strRegex = null;
-                        const objContinuation = new RegExp('("continuationCommand":)([^"]*)("token":)([^"]*)(")([^"]*)(")', 'g');
-                        const objClicktrack = new RegExp('("continuationEndpoint":)([^"]*)("clickTrackingParams":)([^"]*)(")([^"]*)(")', 'g');
-                        const objVideo = new RegExp('("videoRenderer":)([^"]*)("videoId":)([^"]*)(")([^"]{11})(")(.*?)("text")([^"]*)(")([^"]*)(.*?)(")(.*?)(")', 'g');
-                        const matchDayVideo = new RegExp('("itemSectionRenderer")(.*?)("header":)(.*?)("text"|"simpleText")([^"]*)(")([^"]*)(.*?)(")', 'g');
-
-                        const strUnescaped = objAjax.responseText.split('\\"').join('\\u0022').split('\r').join('').split('\n').join('');
-
-                        if ((strRegex = objContinuation.exec(strUnescaped)) !== null) {
-                            objArguments.strContinuation = strRegex[6];
-                        }
-
-                        if ((strRegex = objClicktrack.exec(strUnescaped)) !== null) {
-                            objArguments.strClicktrack = strRegex[6];
-                        }
-
-                        var objVideos = [];
-
-                        while ((strRegex = matchDayVideo.exec(strUnescaped)) !== null) {
-
-                            const dateDay = strRegex[8];
-                            const other = strRegex[0];
-                            while ((strRegex = objVideo.exec(other)) !== null) {
-
-                                const videosObj = {
-                                    date: stringDateToDate(dateDay),
-                                    origDate: dateDay,
-                                    video_id: strRegex[6],
-                                    title: cleanupTitle(strRegex[12])
-                                }
-                                objVideos.push(videosObj);
-                            }
-                        }
-                        return funcCallback(objVideos);
-                    };
-
                     if ((objArguments.strContinuation === null) || (objArguments.strClicktrack === null) || (objArguments.objYtcfg === null) || (objArguments.objYtctx === null)) {
-                        objAjax.open('GET', 'https://www.youtube.com/feed/history');
+                        fetch('https://www.youtube.com/feed/history', {
+                            'credentials': 'include',
+                            'headers': {
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                                'Accept-Language': 'en-US,en;q=0.9',
+                                'Cache-Control': 'max-age=0',
+                                'Connection': 'keep-alive',
+                                'Host': 'www.youtube.com',
+                                'Upgrade-Insecure-Requests': '1',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
+                            },
+                            'referrer': 'https://www.youtube.com/feed/history',
+                            'referrerPolicy': 'no-referrer-when-downgrade',
+                            'body': null,
+                            'method': 'GET',
+                            'mode': 'cors'
+                        }).then(function (objResponse) {
 
-                        objAjax.send();
+                                return objResponse.text();
+                            }
+                        ).then(function (responseText) {
+                                return parseHTML(objArguments, responseText, funcCallback);
+                            }
+                        );
 
+                    } else if ((objArguments.strContinuation !== null) && (objArguments.strClicktrack !== null) && (objArguments.objYtcfg !== null) && (objArguments.objYtctx !== null)) {
+                        console.log("else if");
+
+                        objArguments.objYtctx['client']['screenWidthPoints'] = 1024;
+                        objArguments.objYtctx['client']['screenHeightPoints'] = 768;
+                        objArguments.objYtctx['client']['screenPixelDensity'] = 1;
+                        objArguments.objYtctx['client']['utcOffsetMinutes'] = -420;
+                        objArguments.objYtctx['client']['userInterfaceTheme'] = 'USER_INTERFACE_THEME_LIGHT';
+
+                        objArguments.objYtctx['request']['internalExperimentFlags'] = [];
+                        objArguments.objYtctx['request']['consistencyTokenJars'] = [];
+
+                        fetch('https://www.youtube.com/youtubei/v1/browse?key=' + objArguments.objYtcfg['INNERTUBE_API_KEY'], {
+                            'credentials': 'include',
+                            "method": "POST",
+                            'headers': {
+                                'Accept': '*/*',
+                                'Accept-Language': 'en-US,en;q=0.9',
+                                "Authorization": objArguments.objContauth.strAuth,
+                                'X-Goog-AuthUser': '0',
+                                'X-Goog-PageId': objArguments.objYtcfg['DELEGATED_SESSION_ID'],
+                                'X-Goog-Visitor-Id': objArguments.objYtctx['client']['visitorData'],
+                                'Cache-Control': 'max-age=0',
+                                'Connection': 'keep-alive',
+                                'Content-Type': 'application/json',
+                                'Host': 'www.youtube.com',
+                                'Origin': 'https://www.youtube.com',
+                                'Referer': 'https://www.youtube.com/feed/history',
+                                'Sec-Fetch-Mode': 'cors',
+                                'Sec-Fetch-Site': 'same-origin',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36',
+                                'X-YouTube-Client-Name': '1'
+
+                            },
+                            'referrer': 'https://www.youtube.com/feed/history',
+                            'referrerPolicy': 'no-referrer-when-downgrade',
+                            'body': JSON.stringify({
+                                'context': {
+                                    'client': objArguments.objYtctx['client'],
+                                    'request': objArguments.objYtctx['request'],
+                                    'user': {},
+                                    'clickTracking': {
+                                        'clickTrackingParams': objArguments.strClicktrack
+                                    }
+                                },
+                                'continuation': objArguments.strContinuation
+                            }),
+                        }).then(function (objResponse) {
+
+                                return objResponse.text();
+                            }
+                        ).then(function (responseText) {
+
+                            parseHTML(objArguments, responseText, funcCallback);
+
+                        }).catch(function (error) {
+                            console.error(error);
+                        });
                     }
-                    // else if ((objArguments.strContinuation !== null) && (objArguments.strClicktrack !== null) && (objArguments.objYtcfg !== null) && (objArguments.objYtctx !== null)) {
-                    //     objAjax.open('POST', 'https://www.youtube.com/youtubei/v1/browse?key=' + objArguments.objYtcfg['INNERTUBE_API_KEY']);
-                    //
-                    //     objAjax.setRequestHeader('Authorization', objArguments.objContauth.strAuth);
-                    //     objAjax.setRequestHeader('Content-Type', 'application/json');
-                    //     objAjax.setRequestHeader('X-Origin', 'https://www.youtube.com');
-                    //     objAjax.setRequestHeader('X-Goog-AuthUser', '0');
-                    //     objAjax.setRequestHeader('X-Goog-PageId', objArguments.objYtcfg['DELEGATED_SESSION_ID']);
-                    //     objAjax.setRequestHeader('X-Goog-Visitor-Id', objArguments.objYtctx['client']['visitorData']);
-                    //
-                    //     objArguments.objYtctx['client']['screenWidthPoints'] = 1024;
-                    //     objArguments.objYtctx['client']['screenHeightPoints'] = 768;
-                    //     objArguments.objYtctx['client']['screenPixelDensity'] = 1;
-                    //     objArguments.objYtctx['client']['utcOffsetMinutes'] = -420;
-                    //     objArguments.objYtctx['client']['userInterfaceTheme'] = 'USER_INTERFACE_THEME_LIGHT';
-                    //
-                    //     objArguments.objYtctx['request']['internalExperimentFlags'] = [];
-                    //     objArguments.objYtctx['request']['consistencyTokenJars'] = [];
-                    //
-                    //     objAjax.send(JSON.stringify({
-                    //         'context': {
-                    //             'client': objArguments.objYtctx['client'],
-                    //             'request': objArguments.objYtctx['request'],
-                    //             'user': {},
-                    //             'clickTracking': {
-                    //                 'clickTrackingParams': objArguments.strClicktrack
-                    //             }
-                    //         },
-                    //         'continuation': objArguments.strContinuation
-                    //     }));
-                    //
-                    // }
 
                     if (objArguments.strContinuation !== null) {
                         objArguments.strContinuation = null;
                     }
+
                 },
                 'objIncreaseFetch': function (objArguments, funcCallback) {
                     var videosLength = objArguments.objVideos.length
@@ -499,27 +558,42 @@ var Youtube = {
                         return r;
                     }, Object.create(null));
 
+                    objArguments.objVideos = [];
 
-                    if (objRequest.hasOwnProperty("intThreshold") === false
-                        || objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
+
+                    if (objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
                         if (objArguments.strContinuation !== null) {
-                            chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
-                                updateHtml(data)
-                            })
+
+                            updateHtml()
 
                             save_history(results).then(r => {
-                                    return funcCallback({}, 'objContauth');
+                                    send_message("get_history",
+                                        function (response) {
+                                            if (objArguments.checkUser.lastDate !== null) {
+                                                const lastDate = new Date(objArguments.checkUser.lastDate)
+                                                const lastDateFromResults = new Date(Object.keys(results).sort()[0])
+                                                if (lastDateFromResults <= lastDate) {
+                                                    console.log("lastDateFromResults <= lastDate", lastDateFromResults, lastDate)
+                                                    return funcCallback({}, 'objDeltaFinished');
+                                                }
+                                                return funcCallback({}, 'objContauth');
+                                            }
+
+                                        })
+                                    return funcResponse({'status': 'running', 'message': 'Keep fetching'});
                                 }
                             )
+                        } else {
+                            return funcCallback({}, 'objFinished');
                         }
                     } else {
-                        chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
-                        })
 
                         save_history(results).then(r => {
                                 return funcCallback({}, 'objFinished');
                             }
-                        )
+                        ).catch(e => {
+                            console.error(e)
+                        })
 
                         return funcCallback({}, 'objFinished');
                     }
@@ -527,16 +601,29 @@ var Youtube = {
 
                 },
                 'objFinished': function (objArguments, funcCallback) {
+                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                    })
                     chrome.storage.sync.set({'history_fetched': true}, function () {
                     })
-                    return funcCallback({});
+
+                    mark_history_fetched().then(r => {
+                        return funcResponse({});
+                    })
+                }
+                ,
+                'objDeltaFinished': function (objArguments, funcCallback) {
+                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                        return funcCallback({});
+                    })
                 }
 
-            }, function (objArguments) {
+            },
+            function (objArguments) {
                 if (objArguments === null) {
                     funcResponse({"asdf": "asdf"});
                 } else if (objArguments !== null) {
-                    funcResponse({"objArguments":"asdfasdf"})
+
+                    funcResponse({"objArguments": "done"})
                 }
             });
     },
@@ -551,3 +638,8 @@ var Youtube = {
 // });
 
 
+// Youtube.synchronize({
+//     'intThreshold': 1000
+// }, function (objData) {
+//     console.log("objData")
+// })

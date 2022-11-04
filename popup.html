@@ -17,31 +17,62 @@
 <body>
 
 <div id="main" class='card-content'>
-    <div style="margin-bottom: 8px; justify-content: space-between; display: flex; flex-direction: column;height: 100%">
+    <div id="progress" class="preloader-wrapper active" style="display: none">
+        <div class="spinner-layer spinner-red-only">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div>
+            <div class="gap-patch">
+                <div class="circle"></div>
+            </div>
+            <div class="circle-clipper right">
+                <div class="circle"></div>
+            </div>
+        </div>
+    </div>
 
-        <div style="display: flex; flex-direction: column; margin-bottom: 10px;height: 50%;justify-content: space-around;">
+    <div id="page"
+         style="margin-bottom: 8px; justify-content: space-between; display: flex; flex-direction: column;height: 100%">
+        <!--        loading bar circle -->
+
+        <div id="modal1" class="modal" style="display: none">
+            <div class="modal-content">
+                <blockquote><h5>It might take a while!</h5></blockquote>
+                <span class="loading"> Are you sure you want to sync?</span>
+
+            </div>
+            <div class="modal-footer">
+                <a id="modalBtn" href="#!" class="modal-close waves-effect waves-green btn-flat">Sync</a>
+            </div>
+
+        </div>
+
+        <div style="display: flex; flex-direction: column; margin-bottom: 10px;height: 60%;justify-content: space-between;">
             <span id="username" class="name"></span>
             <div style="justify-content: center; align-items: center; display: flex; flex-direction: column">
                 <a id="loadHistory" style="margin-bottom: 10px"
                    class="waves-effect btn accent-3" role="button">Load History</a>
                 <div id="loading-parent" style="display: none">
-                    <span id="loading" class="loading"> 500 </span>
-                    <span id="loading2" class="loading"> Videos loaded </span>
+                    <span id="loading" class="loading">  </span>
+                    <span id="loading2" class="loading"> </span>
                 </div>
             </div>
-            <!--            history progress-->
         </div>
         <div style="display: flex; justify-content: center">
-            <a id="logout" class="waves-effect waves-light" role="button">Log out
+            <a id="logout" style="font-size: 15px;" class="waves-effect waves-light" role="button">Log out
             </a>
+            <!--            create modal-->
+
 
         </div>
+
+
     </div>
+
 </div>
 
-<div>
-    <a id="login" class="waves-effect waves-light btn" role="button">Login</a>
-
+<div id="login" style="display: flex;justify-content: center;align-items: center;height: inherit;">
+    <a id="loginBtn" class="waves-effect waves-light btn" role="button">Login</a>
 </div>
 <script src="script.js"></script>
 
