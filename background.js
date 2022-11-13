@@ -376,16 +376,18 @@ var Youtube = {
                         console.log("fetching delta check");
                         chrome.storage.sync.get(['extensions.yt-engine.user'], function (data) {
                             data = data['extensions.yt-engine.user']
-                            if (data['lastDate'] !== null) {
-                                return funcCallback({lastDate: data['lastDate']});
-                            }
+                            return funcCallback({lastSavedVideoDate: data['lastSavedVideoDate']});
+
                         })
                     } else {
-                        chrome.storage.sync.set({'history_fetched': false}, function () {
+                        chrome.storage.sync.set({
+                            'history_fetched': false,
+                            'extensions.yt-engine.fetchedVideos': 0
+                        }, function () {
                         })
-                        chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
-                            return funcCallback({});
-                        });
+                        // chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                        //     return funcCallback({});
+                        // });
                     }
                 },
                 'objCookies': function (objArguments, funcCallback) {
@@ -543,7 +545,7 @@ var Youtube = {
                     })
                 },
                 'objContinuation': function (objArguments, funcCallback) {
-                    const results = objArguments.objVideos.reduce(function (r, a) {
+                    const youtubeHistoryResult = objArguments.objVideos.reduce(function (r, a) {
                         r[a.date] = r[a.date] || [];
                         r[a.date].push(a.video_id);
                         return r;
@@ -557,29 +559,32 @@ var Youtube = {
 
                             updateHtml()
 
-                            save_history(results).then(r => {
-                                    send_message("get_history",
-                                        function (response) {
-                                            if (objArguments.checkUser.lastDate !== null) {
-                                                const lastDate = new Date(objArguments.checkUser.lastDate)
-                                                const lastDateFromResults = new Date(Object.keys(results).sort()[0])
-                                                if (lastDateFromResults <= lastDate) {
-                                                    console.log("lastDateFromResults <= lastDate", lastDateFromResults, lastDate)
-                                                    return funcCallback({}, 'objDeltaFinished');
-                                                }
-                                                return funcCallback({}, 'objContauth');
-                                            }
+                            save_history(youtubeHistoryResult)
+                                .then(r => {
+                                        send_message("get_history",
+                                            function (response) {
+                                                if (objArguments.checkUser.lastSavedVideoDate !== null) {
 
-                                        })
-                                    return funcResponse({'status': 'running', 'message': 'Keep fetching'});
-                                }
-                            )
+                                                    const lastSavedVideoDate = new Date(objArguments.checkUser.lastSavedVideoDate)
+                                                    const lastWatchedVideo = new Date(Object.keys(youtubeHistoryResult).sort()[0])
+
+                                                    if (lastWatchedVideo <= lastSavedVideoDate) {
+                                                        console.log("Stop fetching, last watched video is older than last saved video")
+                                                        return funcCallback({}, 'objDeltaFinished');
+                                                    }
+                                                    return funcCallback({}, 'objContauth');
+                                                }
+
+                                            })
+                                        return funcResponse({'status': 'running', 'message': 'Keep fetching'});
+                                    }
+                                )
                         } else {
                             return funcCallback({}, 'objFinished');
                         }
                     } else {
 
-                        save_history(results).then(r => {
+                        save_history(youtubeHistoryResult).then(r => {
                                 return funcCallback({}, 'objFinished');
                             }
                         ).catch(e => {

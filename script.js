@@ -46,7 +46,7 @@ function welcomeUser(user) {
             if (user["isHistoryFetched"]) {
                 document.getElementById("loadHistory").innerText = "Force Reload History";
                 document.getElementById("loading-parent").style.display = "block";
-                document.getElementById("loading2").innerHTML = "last updated: " + user["lastDate"];
+                document.getElementById("loading2").innerHTML = "last updated: " + user["lastSavedVideoDate"];
             } else if (result["extensions.yt-engine.fetchedVideos"] > 0) {
                 console.log(result["extensions.yt-engine.fetchedVideos"])
                 document.getElementById("loadHistory").style = "pointer-events: none; cursor: default; text-decoration: none; margin-bottom: 10px;" +
