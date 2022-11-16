@@ -23,6 +23,8 @@ function onClickOutside() {
 
 
 function fetchDelta() {
+    console.log("fetching delta")
+
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (result) {
         if (result['extensions.yt-engine.fetchedVideos'] === 0) {
             console.log("fetching delta")
@@ -58,8 +60,6 @@ function welcomeUser(user) {
                     "    font-weight: 200;"
                 document.getElementById("loading-parent").style.display = "block";
                 document.getElementById("loading2").innerHTML = "Loading ...";
-
-
             } else {
                 document.getElementById("loading-parent").style.display = "none";
                 document.getElementById("loading2").innerHTML = "Loading...";

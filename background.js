@@ -10,7 +10,6 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
             if (params.has('v')) {
                 const videoId = params.get('v');
                 if (seen.indexOf(videoId) === -1) {
-                    console.log("videoId not seen before");
                     seen.push(videoId)
                     setVideoId(videoId).then(function (result) {
                         if (result) {
@@ -82,7 +81,7 @@ chrome.runtime.onMessage.addListener(
             sendResponse({message: "history"});
         } else if (request.message === "loadHistory") {
             Youtube.synchronize({
-                'intThreshold': 1000
+                'intThreshold': 100000000
             }, function (objData) {
                 sendResponse({complete: true})
             })
@@ -296,16 +295,16 @@ function updateHtml() {
 
 function parseHTML(objArguments, responseText, funcCallback) {
     // get username from responseText
-    try {
-        const objUsername = responseText.split("var ytInitialData = ")[1].split(";</script>")[0];
-        const asd = new RegExp('confirmDialogRenderer.*dialogMessages"([^"]*)"runs"([^"]*)"text":(.*)"bold', 'g');
-        const username_html = asd.exec(objUsername);
-        const username = username_html[3].split('"')[1];
-        console.log(username);
-    } catch (e) {
-        console.log(e);
-        // throw e;
-    }
+    // try {
+    //     const objUsername = responseText.split("var ytInitialData = ")[1].split(";</script>")[0];
+    //     const asd = new RegExp('confirmDialogRenderer.*dialogMessages"([^"]*)"runs"([^"]*)"text":(.*)"bold', 'g');
+    //     const username_html = asd.exec(objUsername);
+    //     const username = username_html[3].split('"')[1];
+    //     console.log(username);
+    // } catch (e) {
+    //     console.log(e);
+    //     // throw e;
+    // }
 
 
     if (objArguments.objYtcfg === null) {
@@ -381,13 +380,11 @@ var Youtube = {
                         })
                     } else {
                         chrome.storage.sync.set({
-                            'history_fetched': false,
-                            'extensions.yt-engine.fetchedVideos': 0
-                        }, function () {
+                            'history_fetched': false}, function () {
                         })
-                        // chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
-                        //     return funcCallback({});
-                        // });
+                        chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                            return funcCallback({});
+                        });
                     }
                 },
                 'objCookies': function (objArguments, funcCallback) {
