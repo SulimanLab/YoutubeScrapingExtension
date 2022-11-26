@@ -1,5 +1,5 @@
 window.addEventListener("click", onClickOutside);
-document.getElementById("loginBtn").addEventListener("click", openPage);
+document.getElementById("loginBtn").addEventListener("click", login);
 document.getElementById("logout").addEventListener("click", logout);
 document.getElementById("loadHistory").addEventListener("click", loadHistory);
 document.getElementById("modalBtn").addEventListener("click", loadHistoryModal);
@@ -22,17 +22,58 @@ function onClickOutside() {
 }
 
 
+function loadHistoryModal() {
+    var modal = document.getElementById('modal1');
+    modal.style.display = 'none';
+    resetFetchedStartingTime()
+    chrome.runtime.sendMessage({message: "loadHistory"}, function (response) {
+
+    });
+    document.getElementById("loadHistory").style = "pointer-events: none; cursor: default; text-decoration: none; margin-bottom: 10px;" +
+        "    margin-bottom: 10px;\n" +
+        "    color: rgb(0 0 0 / 60%);\n" +
+        "    box-shadow: none;\n" +
+        "    background-color: rgba(0, 0, 0, 0.12);\n" +
+        "    font-family: Roboto, Helvetica, Arial, sans-serif;\n" +
+        "    font-weight: 200;"
+    document.getElementById("loading-parent").style.display = "block";
+    document.getElementById("loading2").innerHTML = "Loading ...";
+}
+
+function resetFetchedStartingTime() {
+    chrome.storage.sync.set({'extensions.yt-engine.fetchedStartingTime': new Date().getTime()}, function () {
+    })
+}
+
 function fetchDelta() {
-    console.log("fetching delta")
 
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (result) {
         if (result['extensions.yt-engine.fetchedVideos'] === 0) {
             console.log("fetching delta")
+            resetFetchedStartingTime();
             chrome.runtime.sendMessage({message: "fetchDelta"}, function (response) {
-                document.getElementById("loadHistory").style = "waves-effect btn accent-3";
+                console.log(response)
+                if (response.no_cookies === true) {
+                    document.getElementById("loadHistory").innerText = "Login to Youtube First";
+                    document.getElementById("loadHistory").onclick = function () {
+                        window.open("https://www.youtube.com")
+                    }
+                    document.getElementById("loadHistory").style = "pointer-events: auto; cursor: pointer; text-decoration: none; margin-bottom: 10px;"
+                }
+
             })
+            document.getElementById("loading-parent").style.display = "block";
+            document.getElementById("loading2").innerHTML = "Loading ...";
         } else {
-            console.log("fetching in progress, please wait")
+            chrome.storage.sync.get(['extensions.yt-engine.fetchedStartingTime'], function (result) {
+                let date = new Date(result['extensions.yt-engine.fetchedStartingTime']);
+                const twoHours = 2 * 60 * 60 * 1000;
+                if (new Date().getTime() - date.getTime() > twoHours) {
+                    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                        fetchDelta();
+                    })
+                }
+            })
         }
     })
 
@@ -46,6 +87,7 @@ function welcomeUser(user) {
             document.getElementById("loadHistory").innerText = "Load History";
 
             if (user["isHistoryFetched"]) {
+
                 document.getElementById("loadHistory").innerText = "Force Reload History";
                 document.getElementById("loading-parent").style.display = "block";
                 document.getElementById("loading2").innerHTML = "last updated: " + user["lastSavedVideoDate"];
@@ -73,7 +115,7 @@ function getUserFromBackend() {
     document.getElementById("progress").style.display = "block";
     document.getElementById("page").style.display = "none";
     document.getElementById("login").style.display = "none";
-    fetch(BACKEND_URL + ":5500" + "/user", {
+    fetch(BACKEND_URL + "/user", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -95,6 +137,19 @@ function getUserFromBackend() {
         chrome.storage.sync.set({'extensions.yt-engine.user': user}, function () {
             if (user["isHistoryFetched"]) {
                 fetchDelta();
+            } else {
+                chrome.storage.sync.get(['extensions.yt-engine.fetchedStartingTime'], function (result) {
+                    let date = new Date(result['extensions.yt-engine.fetchedStartingTime']);
+                    if (date === undefined) {
+                        resetFetchedStartingTime();
+                    } else {
+                        const twoHours = 2 * 60 * 60 * 1000;
+                        if (new Date().getTime() - date.getTime() > twoHours) {
+                            chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                            })
+                        }
+                    }
+                })
             }
             welcomeUser(user);
         })
@@ -111,8 +166,8 @@ function getUserFromBackend() {
 getUserFromBackend()
 
 
-function openPage() {
-    window.open(BACKEND_URL + ":3000");
+function login() {
+    window.open(LOGIN_URL);
 }
 
 
@@ -120,28 +175,12 @@ function loadHistory() {
     document.getElementById('modal1').style.display = 'block';
 }
 
-function loadHistoryModal() {
-    var modal = document.getElementById('modal1');
-    modal.style.display = 'none';
-    chrome.runtime.sendMessage({message: "loadHistory"}, function (response) {
-    });
-    document.getElementById("loadHistory").style = "pointer-events: none; cursor: default; text-decoration: none; margin-bottom: 10px;" +
-        "    margin-bottom: 10px;\n" +
-        "    color: rgb(0 0 0 / 60%);\n" +
-        "    box-shadow: none;\n" +
-        "    background-color: rgba(0, 0, 0, 0.12);\n" +
-        "    font-family: Roboto, Helvetica, Arial, sans-serif;\n" +
-        "    font-weight: 200;"
-    document.getElementById("loading-parent").style.display = "block";
-    document.getElementById("loading2").innerHTML = "Loading ...";
-}
-
 
 function logout() {
     document.getElementById("logout").innerText = "Logging out..."
 
     chrome.storage.sync.set({'extensions.yt-engine.user': null}, function () {
-        fetch(BACKEND_URL + ":5500" + "/logout", {
+        fetch(BACKEND_URL + "/api" + "/logout", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

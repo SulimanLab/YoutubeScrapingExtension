@@ -1,9 +1,14 @@
+description:
+YT-engine allows the user to index their Youtube history, and utilize it in YT-ENGINE.com to search for keyword or phrases.
+Keeping track of watched videos is required for this app to work.
+
+
 
 Single purpose:
 YT-engine allows the user to search for keywords, phrases and semantics cross all videos he has watched in youtube. Keeping track of watched videos is required for this app to work.
 
 HOST PERMISSION:
-This app access the communicate with the YT-engine backend app to index the caption from youtube, which requires the host permission
+This app access to communicate with the YT-engine backend app to index the caption from youtube, which requires the host permission
 
 
 
@@ -17,10 +22,6 @@ YT-engine populate iframe, to unified the user experience inside the extension a
 
 webNavigation:
 it is not required, will delete it in next version.
-
-tabs:
-YT-engine actively listen for any video you watch to index it by using our text search engine
-
 
 tabs:
 YT-engine actively listen for any video you watch to index it by using our text search engine

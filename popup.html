@@ -34,6 +34,7 @@
     <div id="page"
          style="margin-bottom: 8px; justify-content: space-between; display: flex; flex-direction: column;height: 100%">
         <!--        loading bar circle -->
+        <!--        alert user-->
 
         <div id="modal1" class="modal" style="display: none">
             <div class="modal-content">
@@ -47,21 +48,26 @@
 
         </div>
 
-        <div style="display: flex; flex-direction: column; margin-bottom: 10px;height: 60%;justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; margin-bottom: 10px;height: 80%">
             <span id="username" class="name"></span>
             <div style="justify-content: center; align-items: center; display: flex; flex-direction: column">
                 <a id="loadHistory" style="margin-bottom: 10px"
                    class="waves-effect btn accent-3" role="button">Load History</a>
-                <div id="loading-parent" style="display: none; margin-top: 1rem;">
+                <div id="loading-parent" style="display: none;">
                     <span id="loading2" class="loading"> </span>
                 </div>
             </div>
+            <!--            create href link to visit out website -->
+            <div style="margin-top: 2rem; width: 80%; align-self: center; font-size: 1rem">
+                <a id="visit" href="https://yt-engine.com" target="_blank" class="accent-3 site"
+                   style="display: contents; font-size: 20px"
+                   role="button">Visit YT-engine</a> to utilize the full potential of this extension.
+            </div>
+
         </div>
         <div style="display: flex; justify-content: center">
             <a id="logout" style="font-size: 15px;" class="waves-effect waves-light" role="button">Log out
             </a>
-            <!--            create modal-->
-
 
         </div>
 

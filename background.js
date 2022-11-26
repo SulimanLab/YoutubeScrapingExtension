@@ -1,6 +1,29 @@
 const seen = [];
 
-const BACKEND_URL = "http://100.88.185.98";
+
+let BACKEND_URL = "http://100.88.185.98:5500";
+chrome.management.getSelf(function (info) {
+    console.log(info)
+    if (info.installType === "development") {
+        BACKEND_URL = "http://100.88.185.98:5500";
+    } else {
+        BACKEND_URL = "https://yt-engine.com/api";
+
+    }
+})
+
+
+// const BACKEND_URL = "https://yt-engine.com";
+// let BACKEND_URL = "http://http://100.88.185.98:5500";
+// chrome.management.getSelf(function (info) {
+//     console.log(info)
+//     if (info.installType === "development") {
+//         BACKEND_URL = "http://100.88.185.98:5500";
+//     } else {
+//         BACKEND_URL = "https://yt-engine.com";
+//
+//     }
+// })
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function (tab) {
@@ -13,7 +36,7 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
                     seen.push(videoId)
                     setVideoId(videoId).then(function (result) {
                         if (result) {
-                            callBackend(videoId)
+                            saveVideo(videoId)
                         }
                     });
                 }
@@ -35,21 +58,19 @@ async function setVideoId(videoId) {
     })
 }
 
-function callBackend(videoId) {
+function saveVideo(videoId) {
     // call backend with search params
 
 
-    const url = new URL(BACKEND_URL + ':5500');
+    const url = new URL(BACKEND_URL);
     const params = {videoId: videoId};
     url.search = new URLSearchParams(params).toString();
-    console.log(url)
     fetch(url)
         .then(function (response) {
             console.log(response)
         }).catch(function (error) {
-            console.error(error)
-        }
-    )
+        console.error(error)
+    })
 
 
 }
@@ -65,7 +86,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 seen.push(videoId)
                 setVideoId(videoId).then(function (result) {
                     if (result) {
-                        callBackend(videoId)
+                        saveVideo(videoId)
                     }
                 });
             }
@@ -74,41 +95,28 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 });
 
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-        console.log(request.message)
-        if (request.message === "get_history") {
-            sendResponse({message: "history"});
-        } else if (request.message === "loadHistory") {
-            Youtube.synchronize({
-                'intThreshold': 100000000
-            }, function (objData) {
-                sendResponse({complete: true})
-            })
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.message === "get_history") {
+        sendResponse({message: "history"});
+    } else if (request.message === "loadHistory") {
+        Youtube.synchronize({
+            'intThreshold': 100000000
+        }, function (objData) {
+            sendResponse({complete: true})
+        })
 
-        } else if (request.message === "fetchDelta") {
-            Youtube.synchronize({
-                'fetchDelta': true,
-                'intThreshold': 1000
-            }, function (objData) {
-                sendResponse({complete: true})
-            })
-        }
-
+    } else if (request.message === "fetchDelta") {
+        Youtube.synchronize({
+            'fetchDelta': true, 'intThreshold': 1000
+        }, function (objData) {
+            if (objData.hasOwnProperty("status") && objData.status === "no_cookies") {
+                sendResponse({no_cookies: true})
+            } else sendResponse({complete: true})
+        })
     }
-);
+    return true;
+});
 
-
-function send_message(message, callback) {
-    chrome.runtime.sendMessage({message: message}, callback);
-}
-
-function loadHistoryFunc(dd) {
-    dd()
-    // Youtube.synchronize({
-    //     'intThreshold': 1000000
-    // })
-}
 
 
 var funcHackyparse = function (strJson) {
@@ -246,46 +254,29 @@ function cleanupTitle(strTitle) {
 
 }
 
-
-function getUserFromBackend() {
-    return new Promise((resolve, reject) => {
-        fetch(BACKEND_URL + ":5500" + "/user", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                resolve(data);
-            })
-    });
-}
-
 function save_history(body) {
-    return new Promise((resolve, reject) => {
-        fetch(BACKEND_URL + ":5500" + "/save-history", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
+    return fetch(BACKEND_URL + "/save-history", {
+        method: "POST", headers: {
+            "Content-Type": "application/json",
+        }, body: JSON.stringify(body),
+    })
+        .then((response) => {
+            if (response.status === 200) {
+                return response;
+            } else {
+                cleanUp();
+                throw new Error("Error while saving history");
+            }
         })
-            .then((response) => {
-                if (response.status === 200) {
-                    resolve(response);
-                } else {
-                    reject(response);
-                }
-            })
-            .catch((err) => {
-                reject(err);
-            })
-    });
+        .catch((err) => {
+            cleanUp();
+            console.error(err);
+            throw new Error("Error while saving history");
+        });
 }
 
 
-function updateHtml() {
+function increaseFetchedVideosNumber() {
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
         console.log(data['extensions.yt-engine.fetchedVideos'])
     })
@@ -294,19 +285,6 @@ function updateHtml() {
 }
 
 function parseHTML(objArguments, responseText, funcCallback) {
-    // get username from responseText
-    // try {
-    //     const objUsername = responseText.split("var ytInitialData = ")[1].split(";</script>")[0];
-    //     const asd = new RegExp('confirmDialogRenderer.*dialogMessages"([^"]*)"runs"([^"]*)"text":(.*)"bold', 'g');
-    //     const username_html = asd.exec(objUsername);
-    //     const username = username_html[3].split('"')[1];
-    //     console.log(username);
-    // } catch (e) {
-    //     console.log(e);
-    //     // throw e;
-    // }
-
-
     if (objArguments.objYtcfg === null) {
         objArguments.objYtcfg = funcHackyparse(responseText.split('ytcfg.set(').find(function (strData) {
             return strData.indexOf('INNERTUBE_API_KEY') !== -1;
@@ -353,54 +331,68 @@ function parseHTML(objArguments, responseText, funcCallback) {
     return funcCallback(objVideos);
 }
 
+function cleanUp() {
+    console.log("cleaning up")
+    chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+    })
+}
 
 function mark_history_fetched() {
-    return fetch(BACKEND_URL + ":5500" + "/mark-history-fetched", {
+    return fetch(BACKEND_URL + "/mark-history-fetched", {
         method: "GET",
     }).then((response) => {
         if (response.status === 200) {
             return response
         } else {
+            cleanUp();
             throw new Error("Error fetching history")
         }
+    }).catch((err) => {
+        console.log(err)
+        cleanUp();
     })
 }
 
 var Youtube = {
     synchronize: function (objRequest, funcResponse) {
-        Node.series(
-            {
+        Node.series({
                 'checkUser': function (objWorkspace, funcCallback) {
                     if (objRequest.hasOwnProperty("fetchDelta") === true) {
-                        console.log("fetching delta check");
                         chrome.storage.sync.get(['extensions.yt-engine.user'], function (data) {
                             data = data['extensions.yt-engine.user']
-                            return funcCallback({lastSavedVideoDate: data['lastSavedVideoDate']});
+                            return funcCallback({
+                                lastSavedVideoDate: data['lastSavedVideoDate'], lastSyncedVideos: data['last_synced_videos']
+                            });
 
                         })
                     } else {
                         chrome.storage.sync.set({
-                            'history_fetched': false}, function () {
+                            'history_fetched': false
+                        }, function () {
                         })
                         chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
                             return funcCallback({});
                         });
                     }
-                },
-                'objCookies': function (objArguments, funcCallback) {
+                }, 'objCookies': function (objArguments, funcCallback) {
                     var strCookies = ['SAPISID', '__Secure-3PAPISID'];
                     var objCookies = {};
 
                     var funcCookie = function () {
                         if (strCookies.length === 0) {
+                            if (objCookies['SAPISID'] === null && objCookies['__Secure-3PAPISID'] === null) {
+                                chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                                    return funcResponse({"status": "no_cookies"});
+                                });
+
+                            }
                             return funcCallback(objCookies);
                         }
 
                         var strCookie = strCookies.shift();
 
                         chrome.cookies.get({
-                            'url': 'https://www.youtube.com',
-                            'name': strCookie
+                            'url': 'https://www.youtube.com', 'name': strCookie
                         }, function (objCookie) {
                             if (objCookie === null) {
                                 objCookies[strCookie] = null;
@@ -414,8 +406,7 @@ var Youtube = {
                     };
 
                     funcCookie();
-                },
-                'objContauth': function (objArguments, funcCallback) {
+                }, 'objContauth': function (objArguments, funcCallback) {
                     var intTime = Math.round(new Date().getTime() / 1000.0);
                     var strCookie = objArguments.objCookies['SAPISID'] || objArguments.objCookies['__Secure-3PAPISID'];
                     var strOrigin = 'https://www.youtube.com';
@@ -428,8 +419,7 @@ var Youtube = {
                                 }).join('')
                             });
                         });
-                },
-                'objVideos': function (objArguments, funcCallback) {
+                }, 'objVideos': function (objArguments, funcCallback) {
                     if (objArguments.strContinuation === undefined) {
                         objArguments.strContinuation = null;
                         objArguments.strClicktrack = null;
@@ -455,12 +445,10 @@ var Youtube = {
                             'mode': 'cors'
                         }).then(function (objResponse) {
 
-                                return objResponse.text();
-                            }
-                        ).then(function (responseText) {
-                                return parseHTML(objArguments, responseText, funcCallback);
-                            }
-                        );
+                            return objResponse.text();
+                        }).then(function (responseText) {
+                            return parseHTML(objArguments, responseText, funcCallback);
+                        });
 
                     } else if ((objArguments.strContinuation !== null) && (objArguments.strClicktrack !== null) && (objArguments.objYtcfg !== null) && (objArguments.objYtctx !== null)) {
                         console.log("else if");
@@ -506,14 +494,12 @@ var Youtube = {
                                     'clickTracking': {
                                         'clickTrackingParams': objArguments.strClicktrack
                                     }
-                                },
-                                'continuation': objArguments.strContinuation
+                                }, 'continuation': objArguments.strContinuation
                             }),
                         }).then(function (objResponse) {
 
-                                return objResponse.text();
-                            }
-                        ).then(function (responseText) {
+                            return objResponse.text();
+                        }).then(function (responseText) {
 
                             parseHTML(objArguments, responseText, funcCallback);
 
@@ -526,8 +512,7 @@ var Youtube = {
                         objArguments.strContinuation = null;
                     }
 
-                },
-                'objIncreaseFetch': function (objArguments, funcCallback) {
+                }, 'objIncreaseFetch': function (objArguments, funcCallback) {
                     var videosLength = objArguments.objVideos.length
                     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (data) {
                         if (Object.keys(data).length === 0) {
@@ -540,9 +525,8 @@ var Youtube = {
                             return funcCallback({'count': newVideoLength});
                         });
                     })
-                },
-                'objContinuation': function (objArguments, funcCallback) {
-                    const youtubeHistoryResult = objArguments.objVideos.reduce(function (r, a) {
+                }, 'objContinuation': function (objArguments, funcCallback) {
+                    let youtubeHistoryResult = objArguments.objVideos.reduce(function (r, a) {
                         r[a.date] = r[a.date] || [];
                         r[a.date].push(a.video_id);
                         return r;
@@ -554,46 +538,57 @@ var Youtube = {
                     if (objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
                         if (objArguments.strContinuation !== null) {
 
-                            updateHtml()
+                            increaseFetchedVideosNumber()
 
-                            save_history(youtubeHistoryResult)
-                                .then(r => {
-                                        send_message("get_history",
-                                            function (response) {
-                                                if (objArguments.checkUser.lastSavedVideoDate !== null) {
+                            if (objRequest.hasOwnProperty("fetchDelta") === true) { // only delta
+                                let lastWatchedVideo = Object.keys(youtubeHistoryResult).sort().reverse()[0];
 
-                                                    const lastSavedVideoDate = new Date(objArguments.checkUser.lastSavedVideoDate)
-                                                    const lastWatchedVideo = new Date(Object.keys(youtubeHistoryResult).sort()[0])
+                                const lastSavedVideoDate = new Date(objArguments.checkUser.lastSavedVideoDate)
+                                const lastWatchedVideoDate = new Date(lastWatchedVideo)
+                                if (lastWatchedVideoDate < lastSavedVideoDate) {
 
-                                                    if (lastWatchedVideo <= lastSavedVideoDate) {
-                                                        console.log("Stop fetching, last watched video is older than last saved video")
-                                                        return funcCallback({}, 'objDeltaFinished');
-                                                    }
-                                                    return funcCallback({}, 'objContauth');
-                                                }
+                                    console.log("Stop fetching, last watched video is older than last saved video")
+                                    return funcCallback({}, 'objDeltaFinished');
+                                } else if (lastWatchedVideoDate.getTime() === lastSavedVideoDate.getTime()) {
+                                    console.log("Continue fetching, last watched video is same day as last saved video")
+                                    const lastSavedVideos = objArguments.checkUser.lastSyncedVideos
 
-                                            })
-                                        return funcResponse({'status': 'running', 'message': 'Keep fetching'});
+                                    youtubeHistoryResult = Object
+                                        .keys(youtubeHistoryResult)
+                                        .filter(key => new Date(key).getTime() >= lastSavedVideoDate.getTime())
+                                        .map(key => youtubeHistoryResult[key]
+                                            .filter(video => lastSavedVideos.indexOf(video) === -1)
+                                        ).filter(key => key.length > 0)
+                                    if (youtubeHistoryResult.length === 0) {
+                                        console.log("No new videos")
+                                        return funcCallback({}, 'objDeltaFinished');
                                     }
-                                )
+                                }
+                                save_history(youtubeHistoryResult)
+                                    .then(r => {
+                                        return funcCallback({}, 'objContauth');
+                                    })
+                                    .catch(e => {
+                                        return funcResponse({'status': 'error', 'message': e});
+                                    })
+                            } else {
+                                return funcCallback({}, 'objContauth');
+                            }
+
                         } else {
+
+                            save_history(youtubeHistoryResult).then(r => {
+                                return funcCallback({}, 'objFinished');
+                            }).catch(e => {
+                                console.error(e)
+                            })
+
                             return funcCallback({}, 'objFinished');
                         }
-                    } else {
 
-                        save_history(youtubeHistoryResult).then(r => {
-                                return funcCallback({}, 'objFinished');
-                            }
-                        ).catch(e => {
-                            console.error(e)
-                        })
 
-                        return funcCallback({}, 'objFinished');
                     }
-
-
-                },
-                'objFinished': function (objArguments, funcCallback) {
+                }, 'objFinished': function (objArguments, funcCallback) {
                     chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
                     })
                     chrome.storage.sync.set({'history_fetched': true}, function () {
@@ -602,8 +597,7 @@ var Youtube = {
                     mark_history_fetched().then(r => {
                         return funcResponse({});
                     })
-                }
-                ,
+                },
                 'objDeltaFinished': function (objArguments, funcCallback) {
                     chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
                         return funcCallback({});
@@ -623,16 +617,3 @@ var Youtube = {
 
 
 };
-//
-// Youtube.synchronize({
-//     'intThreshold': 512
-// }, function (objResponse) {
-//     console.log('synchronized youtube');
-// });
-
-
-// Youtube.synchronize({
-//     'intThreshold': 1000
-// }, function (objData) {
-//     console.log("objData")
-// })
