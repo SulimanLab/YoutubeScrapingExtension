@@ -4,6 +4,12 @@ document.getElementById("logout").addEventListener("click", logout);
 document.getElementById("loadHistory").addEventListener("click", loadHistory);
 document.getElementById("modalBtn").addEventListener("click", loadHistoryModal);
 
+console.log("Asdf");
+SET_BACKEND_URL_AYSNC().then(() => {
+    getUserFromBackend()
+});
+console.log("DONE")
+
 function onClickOutside() {
     var modal = document.getElementById('modal1');
     var loadHistory = document.getElementById('loadHistory');
@@ -162,8 +168,6 @@ function getUserFromBackend() {
         }
     })
 }
-
-getUserFromBackend()
 
 
 function login() {

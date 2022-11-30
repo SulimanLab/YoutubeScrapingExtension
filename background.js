@@ -8,22 +8,9 @@ chrome.management.getSelf(function (info) {
         BACKEND_URL = "http://100.88.185.98:5500";
     } else {
         BACKEND_URL = "https://yt-engine.com/api";
-
     }
 })
 
-
-// const BACKEND_URL = "https://yt-engine.com";
-// let BACKEND_URL = "http://http://100.88.185.98:5500";
-// chrome.management.getSelf(function (info) {
-//     console.log(info)
-//     if (info.installType === "development") {
-//         BACKEND_URL = "http://100.88.185.98:5500";
-//     } else {
-//         BACKEND_URL = "https://yt-engine.com";
-//
-//     }
-// })
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function (tab) {
@@ -116,7 +103,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
     return true;
 });
-
 
 
 var funcHackyparse = function (strJson) {

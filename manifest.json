@@ -1,7 +1,7 @@
 {
   "name": "YT-engine",
   "description": "Search all your watched videos on YouTube",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest_version": 3,
   "background": {
     "type": "module",
