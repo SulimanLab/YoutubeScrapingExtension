@@ -54,7 +54,7 @@ function resetFetchedStartingTime() {
 function fetchDelta() {
 
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (result) {
-        if (result['extensions.yt-engine.fetchedVideos'] === 0) {
+        if (result['extensions.yt-engine.fetchedVideos'] === 0 || result['extensions.yt-engine.fetchedVideos'] === undefined) {
             console.log("fetching delta")
             resetFetchedStartingTime();
             chrome.runtime.sendMessage({message: "fetchDelta"}, function (response) {
@@ -72,6 +72,10 @@ function fetchDelta() {
             document.getElementById("loading2").innerHTML = "Loading ...";
         } else {
             chrome.storage.sync.get(['extensions.yt-engine.fetchedStartingTime'], function (result) {
+                if (result['extensions.yt-engine.fetchedStartingTime'] === undefined) {
+                    resetFetchedStartingTime();
+                    fetchDelta();
+                }
                 let date = new Date(result['extensions.yt-engine.fetchedStartingTime']);
                 const twoHours = 2 * 60 * 60 * 1000;
                 if (new Date().getTime() - date.getTime() > twoHours) {
