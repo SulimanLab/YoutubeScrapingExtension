@@ -1,7 +1,7 @@
 {
   "name": "YT-engine",
   "description": "Search all your watched videos on YouTube",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "manifest_version": 3,
   "background": {
     "type": "module",
@@ -40,6 +40,7 @@
   "host_permissions": [
     "https://yt-engine.com/*",
     "https://www.youtube.com/*",
-    "*://*.ytimg.com/vi/*/*"
+    "*://*.ytimg.com/vi/*/*",
+    "http://100.98.101.44:5500/*"
   ]
 }

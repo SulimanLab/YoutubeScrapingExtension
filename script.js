@@ -121,7 +121,7 @@ function getUserFromBackend() {
     document.getElementById("progress").style.display = "block";
     document.getElementById("page").style.display = "none";
     document.getElementById("login").style.display = "none";
-    fetch(BACKEND_URL + "/user", {
+    fetch('http://100.98.101.44:5500' + "/user", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -184,7 +184,7 @@ function logout() {
     document.getElementById("logout").innerText = "Logging out..."
 
     chrome.storage.sync.set({'extensions.yt-engine.user': null}, function () {
-        fetch(BACKEND_URL + "/api" + "/logout", {
+        fetch('100.98.101.44:5500' + "/api" + "/logout", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
