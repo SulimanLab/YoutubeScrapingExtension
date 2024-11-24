@@ -121,7 +121,7 @@ function getUserFromBackend() {
     document.getElementById("progress").style.display = "block";
     document.getElementById("page").style.display = "none";
     document.getElementById("login").style.display = "none";
-    fetch('http://100.98.101.44:5500' + "/user", {
+    fetch('https://yt-engine.com/api' + "/user", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",

@@ -41,6 +41,6 @@
     "https://yt-engine.com/*",
     "https://www.youtube.com/*",
     "*://*.ytimg.com/vi/*/*",
-    "http://100.98.101.44:5500/*"
+    "https://yt-engine.com/api/*"
   ]
 }

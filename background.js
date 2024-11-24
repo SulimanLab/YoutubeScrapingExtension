@@ -1,11 +1,11 @@
 const seen = [];
 
 
-let BACKEND_URL = "http://100.98.101.44:5500";
+let BACKEND_URL = "https://yt-engine.com/api";
 chrome.management.getSelf(function (info) {
     console.log(info)
     if (info.installType === "development") {
-        BACKEND_URL = "http://100.98.101.44:5500";
+        BACKEND_URL = "https://yt-engine.com/api";
     } else {
         BACKEND_URL = "https://yt-engine.com/api";
     }
@@ -241,10 +241,13 @@ function cleanupTitle(strTitle) {
 }
 
 function save_history(body) {
+    const bodyJson = JSON.stringify(body);
+    console.log(bodyJson)
+
     return fetch(BACKEND_URL + "/save-history", {
         method: "POST", headers: {
             "Content-Type": "application/json",
-        }, body: JSON.stringify(body),
+        }, body: bodyJson,
     })
         .then((response) => {
             if (response.status === 200) {
