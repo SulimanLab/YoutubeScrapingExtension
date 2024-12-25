@@ -6,9 +6,9 @@ document.getElementById("modalBtn").addEventListener("click", loadHistoryModal);
 
 console.log("Asdf");
 SET_BACKEND_URL_AYSNC().then(() => {
+    console.log("DONE")
     getUserFromBackend()
 });
-console.log("DONE")
 
 function onClickOutside() {
     var modal = document.getElementById('modal1');
@@ -29,21 +29,54 @@ function onClickOutside() {
 
 
 function loadHistoryModal() {
-    var modal = document.getElementById('modal1');
-    modal.style.display = 'none';
-    resetFetchedStartingTime()
-    chrome.runtime.sendMessage({message: "loadHistory"}, function (response) {
 
+    const modal = document.getElementById('modal1');
+    const loadHistoryButton = document.getElementById("loadHistory");
+    const loadingParent = document.getElementById("loading-parent");
+    const loadingIndicator = document.getElementById("loading2");
+
+    // Prevent further clicks by disabling the button
+    loadHistoryButton.style.pointerEvents = "none";
+    loadHistoryButton.style.cursor = "default";
+    loadHistoryButton.style.color = "rgba(0, 0, 0, 0.6)";
+    loadHistoryButton.style.boxShadow = "none";
+    loadHistoryButton.style.backgroundColor = "rgba(0, 0, 0, 0.12)";
+    loadHistoryButton.style.fontWeight = "200";
+
+    // Show the loading spinner and modal
+    loadingParent.style.display = "block";
+    loadingIndicator.innerHTML = "Loading ...";
+    modal.style.display = 'none';
+
+    // Send message to background script to load history
+    chrome.runtime.sendMessage({ message: "loadHistory" }, function (response) {
+        // Enable the button again after loading finishes
+        loadHistoryButton.style.pointerEvents = "auto";
+        loadHistoryButton.style.cursor = "pointer";
+        loadHistoryButton.style.color = "initial";
+        loadHistoryButton.style.boxShadow = "";
+        loadHistoryButton.style.backgroundColor = "";
+        loadHistoryButton.style.fontWeight = "normal";
+
+        // Hide the loading spinner
+        loadingParent.style.display = "none";
+        loadingIndicator.innerHTML = "";
     });
-    document.getElementById("loadHistory").style = "pointer-events: none; cursor: default; text-decoration: none; margin-bottom: 10px;" +
-        "    margin-bottom: 10px;\n" +
-        "    color: rgb(0 0 0 / 60%);\n" +
-        "    box-shadow: none;\n" +
-        "    background-color: rgba(0, 0, 0, 0.12);\n" +
-        "    font-family: Roboto, Helvetica, Arial, sans-serif;\n" +
-        "    font-weight: 200;"
-    document.getElementById("loading-parent").style.display = "block";
-    document.getElementById("loading2").innerHTML = "Loading ...";
+    // var modal = document.getElementById('modal1');
+    // modal.style.display = 'none';
+    // resetFetchedStartingTime()
+    // chrome.runtime.sendMessage({message: "loadHistory"}, function (response) {
+    //
+    // });
+    // document.getElementById("loadHistory").style = "pointer-events: none; cursor: default; text-decoration: none; margin-bottom: 10px;" +
+    //     "    margin-bottom: 10px;\n" +
+    //     "    color: rgb(0 0 0 / 60%);\n" +
+    //     "    box-shadow: none;\n" +
+    //     "    background-color: rgba(0, 0, 0, 0.12);\n" +
+    //     "    font-family: Roboto, Helvetica, Arial, sans-serif;\n" +
+    //     "    font-weight: 200;"
+    // document.getElementById("loading-parent").style.display = "block";
+    // document.getElementById("loading2").innerHTML = "Loading ...";
 }
 
 function resetFetchedStartingTime() {
@@ -86,6 +119,7 @@ function fetchDelta() {
 }
 
 function welcomeUser(user) {
+    console.log(user)
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (result) {
             document.getElementById("username").innerHTML = "HI " + user.name;
             document.getElementById("logout").style.display = "block";
@@ -121,7 +155,8 @@ function getUserFromBackend() {
     document.getElementById("progress").style.display = "block";
     document.getElementById("page").style.display = "none";
     document.getElementById("login").style.display = "none";
-    fetch('https://yt-engine.com/api' + "/user", {
+    console.log(BACKEND_URL)
+    fetch(BACKEND_URL + "/user", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -184,7 +219,7 @@ function logout() {
     document.getElementById("logout").innerText = "Logging out..."
 
     chrome.storage.sync.set({'extensions.yt-engine.user': null}, function () {
-        fetch('100.98.101.44:5500' + "/api" + "/logout", {
+        fetch('https://yt-engine.com' + "/api" + "/logout", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

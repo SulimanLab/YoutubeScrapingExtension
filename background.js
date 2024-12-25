@@ -3,7 +3,7 @@ const seen = [];
 
 let BACKEND_URL = "https://yt-engine.com/api";
 chrome.management.getSelf(function (info) {
-    console.log(info)
+
     if (info.installType === "development") {
         BACKEND_URL = "https://yt-engine.com/api";
     } else {
@@ -49,7 +49,7 @@ function saveVideo(videoId) {
     // call backend with search params
 
 
-    const url = new URL(BACKEND_URL);
+    const url = new URL(BACKEND_URL + "/");
     const params = {videoId: videoId};
     url.search = new URLSearchParams(params).toString();
     fetch(url)
@@ -122,6 +122,7 @@ var funcHackyparse = function (strJson) {
 
 var Node = {
     series: function (objFunctions, funcCallback) {
+        console.log("alskdfjalskdfjaslkd")
 
         var strFunctions = Object.keys(objFunctions);
         var objWorkspace = {};
@@ -344,13 +345,15 @@ function mark_history_fetched() {
 
 var Youtube = {
     synchronize: function (objRequest, funcResponse) {
-        Node.series({
+        Node.series(
+            {
                 'checkUser': function (objWorkspace, funcCallback) {
                     if (objRequest.hasOwnProperty("fetchDelta") === true) {
                         chrome.storage.sync.get(['extensions.yt-engine.user'], function (data) {
                             data = data['extensions.yt-engine.user']
                             return funcCallback({
-                                lastSavedVideoDate: data['lastSavedVideoDate'], lastSyncedVideos: data['last_synced_videos']
+                                lastSavedVideoDate: data['lastSavedVideoDate'],
+                                lastSyncedVideos: data['last_synced_videos']
                             });
 
                         })
@@ -523,6 +526,7 @@ var Youtube = {
 
                     objArguments.objVideos = [];
 
+                    console.log("alskdfjalskdfjaslkd")
 
                     if (objArguments.objIncreaseFetch.count < objRequest.intThreshold) {
                         if (objArguments.strContinuation !== null) {
@@ -542,12 +546,15 @@ var Youtube = {
                                     console.log("Continue fetching, last watched video is same day as last saved video")
                                     const lastSavedVideos = objArguments.checkUser.lastSyncedVideos
 
+                                    console.log(youtubeHistoryResult)
                                     youtubeHistoryResult = Object
                                         .keys(youtubeHistoryResult)
-                                        .filter(key => new Date(key).getTime() >= lastSavedVideoDate.getTime())
-                                        .map(key => youtubeHistoryResult[key]
-                                            .filter(video => lastSavedVideos.indexOf(video) === -1)
-                                        ).filter(key => key.length > 0)
+                                        .filter(date => new Date(date).getTime() >= lastSavedVideoDate.getTime())
+                                        .filter(videosKeys => videosKeys.length > 0)
+                                        .reduce((acc, key) => {
+                                            acc[key] = key;
+                                            return acc;
+                                        })
                                     if (youtubeHistoryResult.length === 0) {
                                         console.log("No new videos")
                                         return funcCallback({}, 'objDeltaFinished');
@@ -561,7 +568,14 @@ var Youtube = {
                                         return funcResponse({'status': 'error', 'message': e});
                                     })
                             } else {
-                                return funcCallback({}, 'objContauth');
+                                save_history(youtubeHistoryResult).then(r => {
+                                    return funcCallback({}, 'objContauth');
+                                }).catch(e => {
+                                    console.error(e)
+                                    return funcCallback({}, 'objContauth');
+
+                                })
+                                // return funcCallback({}, 'objContauth');
                             }
 
                         } else {
