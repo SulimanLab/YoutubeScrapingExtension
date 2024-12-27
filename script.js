@@ -49,7 +49,7 @@ function loadHistoryModal() {
     modal.style.display = 'none';
 
     // Send message to background script to load history
-    chrome.runtime.sendMessage({ message: "loadHistory" }, function (response) {
+    chrome.runtime.sendMessage({message: "loadHistory"}, function (response) {
         // Enable the button again after loading finishes
         loadHistoryButton.style.pointerEvents = "auto";
         loadHistoryButton.style.cursor = "pointer";
@@ -87,7 +87,15 @@ function resetFetchedStartingTime() {
 function fetchDelta() {
 
     chrome.storage.sync.get(['extensions.yt-engine.fetchedVideos'], function (result) {
-        if (result['extensions.yt-engine.fetchedVideos'] === 0) {
+
+        console.log("result of fetched videos chrome sync storage data: ")
+        console.log(result)
+        if (result['extensions.yt-engine.fetchedVideos'] === undefined) {
+            // alert("Fetched videos is undefined")
+            chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                fetchDelta();
+            })
+        } else if (result['extensions.yt-engine.fetchedVideos'] === 0) {
             console.log("fetching delta")
             resetFetchedStartingTime();
             chrome.runtime.sendMessage({message: "fetchDelta"}, function (response) {
@@ -152,10 +160,11 @@ function welcomeUser(user) {
 }
 
 function getUserFromBackend() {
+    console.log("Getting user from backend")
     document.getElementById("progress").style.display = "block";
     document.getElementById("page").style.display = "none";
     document.getElementById("login").style.display = "none";
-    console.log(BACKEND_URL)
+
     fetch(BACKEND_URL + "/user", {
         method: "GET",
         headers: {
@@ -174,27 +183,31 @@ function getUserFromBackend() {
                     throw new Error("Not authorized");
                 }
             }
-        ).then((user) => {
-        chrome.storage.sync.set({'extensions.yt-engine.user': user}, function () {
-            if (user["isHistoryFetched"]) {
-                fetchDelta();
-            } else {
-                chrome.storage.sync.get(['extensions.yt-engine.fetchedStartingTime'], function (result) {
-                    let date = new Date(result['extensions.yt-engine.fetchedStartingTime']);
-                    if (date === undefined) {
-                        resetFetchedStartingTime();
-                    } else {
-                        const twoHours = 2 * 60 * 60 * 1000;
-                        if (new Date().getTime() - date.getTime() > twoHours) {
-                            chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
-                            })
+        )
+        .then((user) => {
+            console.log(user)
+            chrome.storage.sync.set({'extensions.yt-engine.user': user}, function () {
+                console.log("User is set in chrome storage")
+                if (user["isHistoryFetched"]) {
+                    // alert("History is fetched")
+                    fetchDelta();
+                } else {
+                    chrome.storage.sync.get(['extensions.yt-engine.fetchedStartingTime'], function (result) {
+                        let date = new Date(result['extensions.yt-engine.fetchedStartingTime']);
+                        if (date === undefined) {
+                            resetFetchedStartingTime();
+                        } else {
+                            const twoHours = 2 * 60 * 60 * 1000;
+                            if (new Date().getTime() - date.getTime() > twoHours) {
+                                chrome.storage.sync.set({'extensions.yt-engine.fetchedVideos': 0}, function () {
+                                })
+                            }
                         }
-                    }
-                })
-            }
-            welcomeUser(user);
-        })
-    }).catch((error) => {
+                    })
+                }
+                welcomeUser(user);
+            })
+        }).catch((error) => {
         if (error.message === "Not authorized") {
             document.getElementById("login").style.display = "flex";
         } else {

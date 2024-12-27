@@ -11,6 +11,13 @@ chrome.management.getSelf(function (info) {
     }
 })
 
+// this listener is for the content script to check if the extension is installed
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "YT_ENGINE_CHECK") {
+        sendResponse({type: "YT_ENGINE_RESPONSE", installed: true});
+    }
+});
+
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function (tab) {
